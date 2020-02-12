@@ -1,6 +1,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+// prototype file in C++, to be translated to C
+
 void removeComments(string testcaseFile, string &cleanFile) {
 	std::vector<pair<int, int> > commentMarkerLocations;
 	int n = (int) testcaseFile.size();
