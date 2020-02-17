@@ -59,6 +59,26 @@ void getStream(FILE* fp) {
 	// buffer[BUFFER_SIZE] = EOF;
 }
 
+//get lexeme from start to current state
+char * getLexeme(){
+
+	char *lexeme = (char *)malloc((current - start +1)*sizeof(char));
+	int c = 0;
+	int track = start; //avoiding changing start number
+	while (track <= current){
+		lexeme[c] = buffer[track];
+		c++;
+		track++;
+	}
+
+	lexeme[c] = '\0';
+	return lexeme;
+}
+
+//
+char isKeyword(char *lexeme){
+	
+}
 
 // read next character from input buffer
 char nextchar() {
@@ -339,7 +359,7 @@ TOKEN getNextToken() {
 					 return token;
 
 			// ASSIGNOP
-			case 30: return token
+			case 30: return token;
 
 			// equal
 			case 31: c = nextchar();
