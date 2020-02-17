@@ -1,2 +1,5 @@
 **.DS_Store
 **.out
+**.dSYM
+**.txt
+!grammar.txt
