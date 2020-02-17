@@ -7,7 +7,7 @@
 const int _NUM_KEYWORDS = 3;
 const int _MAX_INPUT_FILE_SIZE = 10000;
 
-char buffer[BUFFER_SIZE+1];
+char buffer[BUFFER_SIZE];
 FILE* fp;
 int start, current;
 
@@ -56,15 +56,15 @@ void getStream(FILE* fp) {
 
 	// read from file into buffer, and terminate it by EOF
 	int size = fread(buffer, sizeof(char), BUFFER_SIZE, fp);
-	// buffer[BUFFER_SIZE] = EOF;
 }
 
-//get lexeme from start to current state
-char * getLexeme(){
 
-	char *lexeme = (char *)malloc((current - start +1)*sizeof(char));
+// get lexeme from start to current state
+char* getLexeme() {
+
+	char* lexeme = (char*) malloc((current - start + 1) * sizeof(char));
 	int c = 0;
-	int track = start; //avoiding changing start number
+	int track = start; // avoiding changing start number
 	while (track <= current){
 		lexeme[c] = buffer[track];
 		c++;
@@ -72,13 +72,17 @@ char * getLexeme(){
 	}
 
 	lexeme[c] = '\0';
+	start = track + 1;
+	current = track + 1;
 	return lexeme;
 }
 
-//
-char isKeyword(char *lexeme){
+
+// check whether a lexeme is a keyword
+char isKeyword(char *lexeme) {
 	
 }
+
 
 // read next character from input buffer
 char nextchar() {
