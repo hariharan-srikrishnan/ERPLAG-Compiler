@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <lexerDef.h>
 
 #define BUFFER_SIZE 2048
 
@@ -62,7 +63,7 @@ void getStream(FILE* fp) {
 // get lexeme from start to current state
 char* getLexeme() {
 
-	char* lexeme = (char*) malloc((current - start + 1) * sizeof(char));
+	char lexeme[25];
 	int c = 0;
 	int track = start; // avoiding changing start number
 	while (track <= current){
@@ -116,8 +117,9 @@ char nextchar1() {
 }
 
 
-TOKEN getNextToken() {
+token getNextToken() {
 	int state = 0;
+	token t;
 	int lineno = 1;
 	char c;
 	int error = 0;
@@ -209,7 +211,12 @@ TOKEN getNextToken() {
 					break;
 
 			case 2: retract(1);
-					return token;
+					t.tid = NUM;
+					t.lexeme = getLexeme();
+					t.lineNo = lineno;
+					start = current + 1;
+					current = start;
+					return t;
 
 			case 3: c = nextchar();
 					if (c >= '0' && c <= '9')
@@ -233,7 +240,12 @@ TOKEN getNextToken() {
 					break;
 
 			case 5: retract(1);
-					return token;
+					t.tid = RNUM;
+					t.lexeme = getLexeme();
+					t.lineNo = lineno;
+					start = current + 1;
+					current = start;
+					return t;
 
 			case 6: c = nextchar();
 					if (c == '+' || c == '-')
@@ -266,7 +278,12 @@ TOKEN getNextToken() {
 					break;
 
 			case 9: retract(1);
-					return token;
+					t.tid = RNUM;
+					t.lexeme = getLexeme();
+					t.lineNo = lineno;
+					start = current + 1;
+					current = start;
+					return t;
 
 			case 10: c = nextchar();
 					 if (c >= '0' && c <= '9')
@@ -278,7 +295,12 @@ TOKEN getNextToken() {
 					 break;
 
 			case 11: retract(1);
-					 return token;
+					 t.tid = RNUM;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			case 12: c = nextchar();
 					 if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
@@ -289,20 +311,46 @@ TOKEN getNextToken() {
 
 					 break;
 
+			// keyword or identifier????
 			case 13: retract(1);
-					 return token;
+					 t.tid = RNUM;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// MINUS
-			case 14: return token;
+			case 14: t.tid = MINUS;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// PLUS
-			case 15: return token;
+			case 15: t.tid = PLUS;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// DIV
-			case 16: return token;
+			case 16: t.tid = DIV;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// COMMA
-			case 17: return token;
+			case 17: t.tid = COMMA;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// ASTERISK
 			case 18: c = nextchar();
@@ -316,25 +364,65 @@ TOKEN getNextToken() {
 
 			// MUL
 			case 19: retract(1);
-					 return token;
+					 t.tid = MUL;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
-			// COMMENT
-			case 20: // handle comments appropriately
+			// COMMENT - do not tokenize
+			case 20: while(1) {
+					 	if (c == '*') {
+					 		char d = nextchar();
+					 		if (d == '*') {
+					 			break;
+					 		}
+					 	}
+					 }
+
+					 state = 0;
+					 break;
 
 			// Closing Bracket
-			case 21: return token;
+			case 21: t.tid = BC;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// opening bracket
-			case 22: return token;
+			case 22: t.tid = BO;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// closing SQBC
-			case 23: return token;
+			case 23: t.tid = SQBC;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
-			// opening SQBC
-			case 24: return token;
+			// opening SQBO
+			case 24: t.tid = SQBO;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// semi-colon
-			case 25: return token;
+			case 25: t.tid = SEMICOL;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// dot
 			case 26: c = nextchar();
@@ -347,7 +435,12 @@ TOKEN getNextToken() {
 					 break;
 
 			// dot dot
-			case 27: return token;
+			case 27: t.tid = RANEGOP;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// colon
 			case 28: c = nextchar();
@@ -360,10 +453,20 @@ TOKEN getNextToken() {
 					 break;
 
 			case 29: retract(1);
-					 return token;
+					 t.tid = COLON;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// ASSIGNOP
-			case 30: return token;
+			case 30: t.tid = ASSIGNOP;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// equal
 			case 31: c = nextchar();
@@ -376,7 +479,12 @@ TOKEN getNextToken() {
 					 break;
 
 			// == 
-			case 32: return token;
+			case 32: t.tid = EQ;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// exclamation
 			case 33: c = nextchar();
@@ -389,7 +497,12 @@ TOKEN getNextToken() {
 					 break;
 
 			// inequality
-			case 34: return token;
+			case 34: t.tid = NE;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// >
 			case 35: c = nextchar();
@@ -406,13 +519,28 @@ TOKEN getNextToken() {
 
 			// GT
 			case 36: retract(1);
-					 return token;
+					 t.tid = GT;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// >>
-			case 37: return token;
+			case 37: t.tid = DEF;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// GE
-			case 38: return token;
+			case 38: t.tid = GE;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// <
 			case 39: c = nextchar();
@@ -429,13 +557,28 @@ TOKEN getNextToken() {
 
 			// LT
 			case 40: retract(1);
-					 return token();
+					 t.tid = LT;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;;
 
 			// <<
-			case 41: return token;
+			case 41: t.tid = ENDDEF;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 			// LE
-			case 42: return token;
+			case 42: t.tid = LE;
+					 t.lexeme = getLexeme();
+					 t.lineNo = lineno;
+					 start = current + 1;
+					 current = start;
+					 return t;
 
 		}
 	}
