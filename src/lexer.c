@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "lexerDef.h"
 #include "hash.h"
 
@@ -16,6 +17,21 @@ int start, current;
 // create hash table	
 int tableSize = 13;
 hashtable* t = createTable(tableSize);
+
+
+// map integers (token id) to token for aesthetics
+char* reverseMap(int tid) {
+	int num_tokens = sizeof(keywordTokens) / sizeof(keywordTokens[0]);
+	for(int i = 0 ; i < num_tokens; i++) {
+		if (keywordTokens[i] == tid) {
+			char* str = (char*) malloc(sizeof(char) * 25);
+			for(int j = 0; j < sizeof(keywords[i]); j++) 
+				str[j] = toupper(keywords[i][j]);
+			
+			return str;
+		}
+	}
+}
 
 
 void removeComments(char *testcaseFile, char *cleanFile) {
