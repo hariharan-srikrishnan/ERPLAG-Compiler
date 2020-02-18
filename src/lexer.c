@@ -123,15 +123,41 @@ token getNextToken() {
 	token t;
 	int lineno = 1;
 	char c;
-	int error = 0;
+	int error = -1; //default
 	start = 0;
 	current = 0;
 
 	while(1) {
 
-		switch(state) {
+		// error handling - print lexeme tokenized so far as well
+		switch(error) {
 
-			// error handling code HERE
+			state = 0;
+			// update start, current
+
+			case 0:
+				printf("Invalid character");
+				break;
+
+			case 1:
+				printf("Expected a number");
+				break;
+
+			case 2:
+				printf("Expected number or + or -");
+				break;
+
+			case 3:
+				printf("Expected .");
+				break;
+
+			case 4:
+				printf("Expected =");
+				break;
+
+		}
+
+		switch(state) {
 
 			case 0: c = nextchar();
 					if (c == ' ' || c == '\t')
@@ -195,7 +221,7 @@ token getNextToken() {
 						state = 39;
 
 					else
-						error = 1;
+						error = 0;
 
 					break;
 
@@ -256,7 +282,7 @@ token getNextToken() {
 						state = 10;
 
 					else
-						error = 1;
+						error = 2;
 
 					break;
 
@@ -372,7 +398,7 @@ token getNextToken() {
 					 current = start;
 					 return t;
 
-			// COMMENT - do not tokenize
+			// COMMENTS - do not tokenize
 			case 20: while(1) {
 					 	if (c == '*') {
 					 		char d = nextchar();
@@ -431,7 +457,7 @@ token getNextToken() {
 					 	state = 27;
 
 					 else
-					 	error = 1;
+					 	error = 3;
 
 					 break;
 
@@ -475,7 +501,7 @@ token getNextToken() {
 					 	state = 32;
 
 					 else 
-					 	error = 1;
+					 	error = 4;
 
 					 break;
 
@@ -493,7 +519,7 @@ token getNextToken() {
 					 	state = 34;
 
 					 else 
-					 	error = 1;
+					 	error = 4;
 
 					 break;
 
@@ -528,7 +554,7 @@ token getNextToken() {
 					 return t;
 
 			// >>
-			case 37: t.tid = DEF;
+			case 37: t.tid = ENDDEF;
 					 t.lexeme = getLexeme();
 					 t.lineNo = lineno;
 					 start = current + 1;
@@ -566,7 +592,7 @@ token getNextToken() {
 					 return t;;
 
 			// <<
-			case 41: t.tid = ENDDEF;
+			case 41: t.tid = DEF;
 					 t.lexeme = getLexeme();
 					 t.lineNo = lineno;
 					 start = current + 1;
