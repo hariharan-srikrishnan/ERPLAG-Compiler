@@ -9,6 +9,7 @@ typedef struct {
 	int intOrFloat;
 } VALUE;
 
+
 // list of tokens
 typedef enum {
 	PLUS,
