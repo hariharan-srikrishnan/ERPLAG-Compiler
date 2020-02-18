@@ -10,9 +10,13 @@
 const int _NUM_KEYWORDS = sizeof(keywords) / sizeof(keywords[0]) ;
 const int _MAX_INPUT_FILE_SIZE = 10000;
 
-char buffer[BUFFER_SIZE];
+char buffer1[BUFFER_SIZE];
+char buffer2[BUFFER_SIZE];
+int readBuffer1, readBuffer2;
+char *start, *current; // current points to the location we will read the next character from
+char lexeme[25];
+
 FILE* fp;
-int start, current;
 
 // create hash table	
 int tableSize = 13;
@@ -85,19 +89,59 @@ void getStream(FILE* fp) {
 // get lexeme from start to current state
 char* getLexeme() {
 
-	char lexeme[25];
-	int c = 0;
-	int track = start; // avoiding changing start number
-	while (track <= current){
-		lexeme[c] = buffer[track];
-		c++;
-		track++;
+	int loc = 0;
+	char* temp;
+	if(start == current) {
+		lexeme[loc++] = '\0';
+		return;
+	}
+	temp = start;
+	// Case 1: start in buffer 1 and current in buffer 1
+	if((buffer1 <= start) && (start < buffer1 + BUFFER_SIZE) && (buffer1 <= current) && (current < buffer1 + BUFFER_SIZE)) {
+		while(temp != current) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
 	}
 
-	lexeme[c] = '\0';
-	start = track + 1;
-	current = track + 1;
-	return lexeme;
+	// Case 2: start in buffer 1 and current in buffer 2
+	else if((buffer1 <= start) && (start < buffer1 + BUFFER_SIZE) && (buffer2 <= current) && (current < buffer2 + BUFFER_SIZE)) {
+		while(temp != buffer1 + BUFFER_SIZE) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
+		temp = buffer2;
+		while(temp != current) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
+	}
+
+	// Case 3: start in buffer 2 and current in buffer 1
+	else if((buffer2 <= start) && (start < buffer2 + BUFFER_SIZE) && (buffer1 <= current) && (current < buffer1 + BUFFER_SIZE)) {
+		while(temp != buffer2 + BUFFER_SIZE) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
+		temp = buffer1;
+		while(temp != current) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
+	}
+
+	// Case 4: start in buffer 2 and current in buffer 2
+	else {
+		while(temp != current) {
+			lexeme[loc++] = *temp;
+			temp++;
+		}
+
+	}
+
+	// Finally case
+	start = current;
+	lexeme[loc++] = '\0';
 }
 
 
@@ -119,32 +163,45 @@ int isKeyword(char *lexeme) {
 // read next character from input buffer
 char nextchar() {
 
-	if(current == BUFFER_SIZE) {
-		int j = 0;
-		for(int i = start; i < current; i++) {
-			buffer[j] = buffer[i];
-			j++;
-		}
+	// Check for overflow case
 
-		int size = fread(buffer + j, sizeof(char), BUFFER_SIZE - j - 1, fp);
-		current = j;//current - start - 1;
-		start = 0;
+	// If reading from buffer 1
+	if(readBuffer1) {
+		// Check for overflow
+		if(current >= buffer1 + BUFFER_SIZE) {
+			// overflow condition, read block into buffer 2 and set current = buffer2
+			
+			int sz = fread(buffer2, sizeof(char), BUFFER_SIZE, fp);
+			
+			current = buffer2;
+			readBuffer1 = 0;
+			readBuffer2 = 1;
+
+		}
+		
 	}
 
-	return buffer[current++];
-}
+	// If reading from buffer 2
 
-char nextchar1() {
-	if(current == BUFFER_SIZE) {
-		int copy_idx = 0;
-		for(int i=start; i<current; i++) {
-			buffer[copy_idx++] = buffer[i];
+	else if(readBuffer2) {
+		// Check for overflow
+		if(current >= buffer2 + BUFFER_SIZE) {
+			// overflow condition
+			
+			int sz = fread(buffer1, sizeof(char), BUFFER_SIZE, fp);
+			
+			current = buffer1;
+			readBuffer1 = 1;
+			readBuffer2 = 0;
 		}
-		int copied = fread(buffer + copy_idx, sizeof(char), BUFFER_SIZE - copy_idx, fp);
-		current = copy_idx;
-		start = 0;
 	}
-	return buffer[current++];
+
+
+	// Default case:
+	
+	char ret = *current;
+	current++;
+	return ret;
 }
 
 
@@ -368,7 +425,7 @@ token getNextToken() {
 
 					 break;
 
-			// keyword or identifier????
+			// keyword or identifier?
 			case 13: retract(1);
 					 t.tid = RNUM;
 					 t.lexeme = getLexeme();
@@ -639,33 +696,4 @@ token getNextToken() {
 
 		}
 	}
-}
-
-int main() {
-	char c;
-	fp = fopen("test.txt", "r");
-	getStream(fp);
-	start = 0; current = 0;
-
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	start = 2; 
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	// 
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	c = nextchar1();
-	putchar(c);
-	return 0;
 }
