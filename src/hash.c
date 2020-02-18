@@ -15,7 +15,7 @@ hashtable* createTable(int tableSize) {
 }
 
 
-hashtable* insert(hashtable* t, int tableSize, char** keywords, int num_keywords) {
+hashtable* insert(hashtable* t, int tableSize, char** keywords, int* keywordTokens, int num_keywords) {
 	for(int index = 0; index < num_keywords; index++) {
 
 		int hashValue = hashFunction(keywords[index], tableSize);
@@ -32,10 +32,11 @@ hashtable* insert(hashtable* t, int tableSize, char** keywords, int num_keywords
 		}
 
 		node* newNode = (node*) malloc(sizeof(node));
-		strcpy(newNode->key, keywords[index]);
+		strcpy(newNode->lexeme, keywords[index]);
+		newNode->token = keywordTokens[index];
 		newNode->next = NULL;
 		t->elementCount++;
-		printf("Inserted: %s\n", keywords[index]);
+		printf("Inserted: %s %d\n", keywords[index], keywordTokens[index]);
 
 		if(t->head[hashValue] == NULL)
 			t->head[hashValue] = newNode;

@@ -3,7 +3,8 @@
 
 
 typedef struct _NODE{
-	char key[25];
+	char lexeme[25];
+	int token;
 	struct _NODE* next;
 } node;
 
@@ -16,7 +17,7 @@ typedef struct {
 
 hashtable* createTable(int tableSize);
 
-hashtable* insert(hashtable* t, int tableSize, char** keywords, int num_keywords);
+hashtable* insert(hashtable* t, int tableSize, char** keywords, int* keywordTokens, int num_keywords);
 
 int hashFunction(char* string, int tableSize);
 

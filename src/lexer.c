@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <lexerDef.h>
-#include <hash.h>
+#include "lexerDef.h"
+#include "hash.h"
 
 #define BUFFER_SIZE 2048
 
-const int _NUM_KEYWORDS = 3;
+const int _NUM_KEYWORDS = sizeof(keywords) / sizeof(keywords[0]) ;
 const int _MAX_INPUT_FILE_SIZE = 10000;
 
 char buffer[BUFFER_SIZE];
 FILE* fp;
 int start, current;
+
+// create hash table	
+int tableSize = 13;
+hashtable* t = createTable(tableSize);
 
 
 void removeComments(char *testcaseFile, char *cleanFile) {
@@ -58,6 +62,7 @@ void getStream(FILE* fp) {
 
 	// read from file into buffer, and terminate it by EOF
 	int size = fread(buffer, sizeof(char), BUFFER_SIZE, fp);
+	t = insert(t, tableSize, keywords, keywordTokens, _NUM_KEYWORDS);
 }
 
 
@@ -80,9 +85,18 @@ char* getLexeme() {
 }
 
 
-// check whether a lexeme is a keyword
-char isKeyword(char *lexeme) {
-	
+// check whether a lexeme is a keyword or an identifier
+int isKeyword(char *lexeme) {
+	int hashValue = hashFunction(lexeme, tableSize);
+	node* tmp = t->head[hashValue];
+
+	while(tmp != NULL) {
+		if (strcmp(tmp->lexeme, lexeme) == 0) 
+			return tmp->token;
+		tmp = tmp->next;
+	}
+
+	return ID;
 }
 
 
@@ -136,23 +150,23 @@ token getNextToken() {
 			// update start, current
 
 			case 0:
-				printf("Invalid character");
+				printf("Invalid character at line number: %d", lineno);
 				break;
 
 			case 1:
-				printf("Expected a number");
+				printf("Expected a number at line number: %d", lineno);
 				break;
 
 			case 2:
-				printf("Expected number or + or -");
+				printf("Expected number or + or - at line number: %d", lineno);
 				break;
 
 			case 3:
-				printf("Expected .");
+				printf("Expected a . at line number: %d", lineno);
 				break;
 
 			case 4:
-				printf("Expected =");
+				printf("Expected a = at line number: %d", lineno);
 				break;
 
 		}
@@ -613,7 +627,7 @@ token getNextToken() {
 
 int main() {
 	char c;
-	FILE* fp = fopen("test.txt", "r");
+	fp = fopen("test.txt", "r");
 	getStream(fp);
 	start = 0; current = 0;
 
