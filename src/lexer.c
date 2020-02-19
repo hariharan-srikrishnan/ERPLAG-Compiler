@@ -15,12 +15,13 @@ char buffer2[BUFFER_SIZE];
 int readBuffer1, readBuffer2;
 char *start, *current; // current points to the location we will read the next character from
 char lexeme[25];
+int lineno = 1;
 
 FILE* fp;
 
 // create hash table	
 int tableSize = 13;
-hashtable* t = createTable(tableSize);
+hashtable* t;
 
 
 // map integers (token id) to token for aesthetics
@@ -81,13 +82,14 @@ void getStream(FILE* fp) {
 	}
 
 	// read from file into buffer, and terminate it by EOF
-	int size = fread(buffer, sizeof(char), BUFFER_SIZE, fp);
+	int size = fread(buffer1, sizeof(char), BUFFER_SIZE, fp);
+	t = createTable(tableSize);
 	t = insert(t, tableSize, keywords, keywordTokens, _NUM_KEYWORDS);
 }
 
 
 // get lexeme from start to current state
-char* getLexeme() {
+void getLexeme() {
 
 	int loc = 0;
 	char* temp;
@@ -163,8 +165,6 @@ int isKeyword(char *lexeme) {
 // read next character from input buffer
 char nextchar() {
 
-	// Check for overflow case
-
 	// If reading from buffer 1
 	if(readBuffer1) {
 		// Check for overflow
@@ -205,21 +205,46 @@ char nextchar() {
 }
 
 
+// retracts the lookahead (current) pointer by n characters
+void retract(int n) {
+
+	// Case 1: current is in buffer 1, and current-n is also in buffer 1
+	if((buffer1 <= current) && (current < buffer1+BUFFER_SIZE) && (buffer1 <= current-n) && (current-n < buffer1+BUFFER_SIZE)) {
+		current = current - n;
+	}
+
+	// Case 2: current is in buffer 1, but current-n is not in buffer 1
+	else if( (buffer1 <= current) && (current < buffer1+BUFFER_SIZE) && !( (buffer1 <= current-n) && (current-n < buffer1+BUFFER_SIZE) ) ) {
+		int left = n - (int)(current - buffer1);
+		current = (buffer2 + BUFFER_SIZE) - left;
+	}
+
+	// Case 3: current is in buffer 2, and current-n is also in buffer 2
+	else if( (buffer2 <= current) && (current < buffer2+BUFFER_SIZE) && (buffer2 <= current-n) && (current-n < buffer2+BUFFER_SIZE) ) {
+		current = current - n;
+	}
+
+	// Case 4: current is in buffer 2, and current-n is not in buffer 2
+	else {
+		int left = n - (int)(current - buffer2);
+		current = (buffer1 + BUFFER_SIZE) - left;
+	}
+}
+
+// retrieves the next token from the input file
 token getNextToken() {
 	int state = 0;
 	token t;
-	int lineno = 1;
 	char c;
 	int error = -1; //default
-	start = 0;
-	current = 0;
+	// start = 0;
+	// current = 0;
 
 	while(1) {
 
 		// error handling - print lexeme tokenized so far as well
 		switch(error) {
 
-			state = 0;
 			// update start, current
 
 			case 0:
@@ -242,6 +267,11 @@ token getNextToken() {
 				printf("Expected a = at line number: %d", lineno);
 				break;
 
+		}
+
+		if(error >= 0) {
+			state = 0;
+			error = -1;
 		}
 
 		switch(state) {
@@ -326,7 +356,7 @@ token getNextToken() {
 
 			case 2: retract(1);
 					t.tid = NUM;
-					t.lexeme = getLexeme();
+					strcpy(t.lexeme, lexeme);
 					t.lineNo = lineno;
 					start = current + 1;
 					current = start;
@@ -355,7 +385,7 @@ token getNextToken() {
 
 			case 5: retract(1);
 					t.tid = RNUM;
-					t.lexeme = getLexeme();
+					strcpy(t.lexeme, lexeme);
 					t.lineNo = lineno;
 					start = current + 1;
 					current = start;
@@ -393,7 +423,7 @@ token getNextToken() {
 
 			case 9: retract(1);
 					t.tid = RNUM;
-					t.lexeme = getLexeme();
+					strcpy(t.lexeme, lexeme);
 					t.lineNo = lineno;
 					start = current + 1;
 					current = start;
@@ -410,7 +440,7 @@ token getNextToken() {
 
 			case 11: retract(1);
 					 t.tid = RNUM;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -428,7 +458,7 @@ token getNextToken() {
 			// keyword or identifier?
 			case 13: retract(1);
 					 t.tid = RNUM;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -436,7 +466,7 @@ token getNextToken() {
 
 			// MINUS
 			case 14: t.tid = MINUS;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -444,7 +474,7 @@ token getNextToken() {
 
 			// PLUS
 			case 15: t.tid = PLUS;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -452,7 +482,7 @@ token getNextToken() {
 
 			// DIV
 			case 16: t.tid = DIV;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -460,7 +490,7 @@ token getNextToken() {
 
 			// COMMA
 			case 17: t.tid = COMMA;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -479,7 +509,7 @@ token getNextToken() {
 			// MUL
 			case 19: retract(1);
 					 t.tid = MUL;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -500,7 +530,7 @@ token getNextToken() {
 
 			// Closing Bracket
 			case 21: t.tid = BC;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -508,7 +538,7 @@ token getNextToken() {
 
 			// opening bracket
 			case 22: t.tid = BO;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -516,7 +546,7 @@ token getNextToken() {
 
 			// closing SQBC
 			case 23: t.tid = SQBC;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -524,7 +554,7 @@ token getNextToken() {
 
 			// opening SQBO
 			case 24: t.tid = SQBO;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -532,7 +562,7 @@ token getNextToken() {
 
 			// semi-colon
 			case 25: t.tid = SEMICOL;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -549,8 +579,8 @@ token getNextToken() {
 					 break;
 
 			// dot dot
-			case 27: t.tid = RANEGOP;
-					 t.lexeme = getLexeme();
+			case 27: t.tid = RANGEOP;
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -568,7 +598,7 @@ token getNextToken() {
 
 			case 29: retract(1);
 					 t.tid = COLON;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -576,7 +606,7 @@ token getNextToken() {
 
 			// ASSIGNOP
 			case 30: t.tid = ASSIGNOP;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -594,7 +624,7 @@ token getNextToken() {
 
 			// == 
 			case 32: t.tid = EQ;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -612,7 +642,7 @@ token getNextToken() {
 
 			// inequality
 			case 34: t.tid = NE;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -634,7 +664,7 @@ token getNextToken() {
 			// GT
 			case 36: retract(1);
 					 t.tid = GT;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -642,7 +672,7 @@ token getNextToken() {
 
 			// >>
 			case 37: t.tid = ENDDEF;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -650,7 +680,7 @@ token getNextToken() {
 
 			// GE
 			case 38: t.tid = GE;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -672,15 +702,15 @@ token getNextToken() {
 			// LT
 			case 40: retract(1);
 					 t.tid = LT;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
-					 return t;;
+					 return t;
 
 			// <<
 			case 41: t.tid = DEF;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
@@ -688,7 +718,7 @@ token getNextToken() {
 
 			// LE
 			case 42: t.tid = LE;
-					 t.lexeme = getLexeme();
+					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 start = current + 1;
 					 current = start;
