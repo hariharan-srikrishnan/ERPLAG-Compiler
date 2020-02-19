@@ -270,9 +270,12 @@ token getNextToken() {
 		}
 
 		if(error >= 0) {
+			getLexeme();
+			printf(".\tEncountered lexeme: %s.\n", lexeme);
 			state = 0;
 			error = -1;
 		}
+
 
 		switch(state) {
 
@@ -453,7 +456,7 @@ token getNextToken() {
 
 			// keyword or identifier?
 			case 13: retract(1);
-					 t.tid = RNUM;
+					 t.tid = isKeyword(lexeme);
 					 getLexeme();
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
