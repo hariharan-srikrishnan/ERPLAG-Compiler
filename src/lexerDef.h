@@ -69,7 +69,8 @@ typedef enum {
 	WHILE,
 	ID,
 	NUM,
-	RNUM
+	RNUM,
+	ENDMARKER
 } tokenid; 
 
 
@@ -113,7 +114,8 @@ char* keywords[] = {
 	"case",
 	"break",
 	"default",
-	"while"
+	"while",
+	"endmarker"
 };
 
 

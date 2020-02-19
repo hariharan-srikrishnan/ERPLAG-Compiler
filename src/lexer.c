@@ -237,15 +237,11 @@ token getNextToken() {
 	token t;
 	char c;
 	int error = -1; //default
-	// start = 0;
-	// current = 0;
 
 	while(1) {
 
-		// error handling - print lexeme tokenized so far as well
+		// error handling
 		switch(error) {
-
-			// update start, current
 
 			case 0:
 				printf("Invalid character at line number: %d", lineno);
@@ -269,10 +265,13 @@ token getNextToken() {
 
 		}
 
-		if(error >= 0) {
+		if (error >= 0) {
+			getLexeme();
+			printf(".\tEncountered lexeme: %s.\n", lexeme);
 			state = 0;
 			error = -1;
 		}
+
 
 		switch(state) {
 
@@ -336,6 +335,9 @@ token getNextToken() {
 
 					else if (c == '<')
 						state = 39;
+
+					else if (c == 0)
+						state = 43;
 
 					else
 						error = 0;
@@ -453,7 +455,7 @@ token getNextToken() {
 
 			// keyword or identifier?
 			case 13: retract(1);
-					 t.tid = RNUM;
+					 t.tid = isKeyword(lexeme);
 					 getLexeme();
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
@@ -694,6 +696,13 @@ token getNextToken() {
 
 			// LE
 			case 42: t.tid = LE;
+					 getLexeme();
+					 strcpy(t.lexeme, lexeme);
+					 t.lineNo = lineno;
+					 return t;
+
+			// end of file
+			case 43: t.tid = ENDMARKER;
 					 getLexeme();
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
