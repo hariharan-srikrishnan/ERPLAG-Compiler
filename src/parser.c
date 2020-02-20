@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lexerDef.h"
-#include "lexer.h"
+// #include "lexer.h"
 #include "parserDef.h"
 
 
@@ -100,8 +100,8 @@ nonterminal getNonTerminal(char* str) {
 	else if (strcmp(str, "lvalueARRStmt") == 0)
 		nt.ntid = lvalueARRStmt;
 
-	else if (strcmp(str, "index") == 0)
-		nt.ntid = index;
+	else if (strcmp(str, "_index") == 0)
+		nt.ntid = _index;
 
 	else if (strcmp(str, "moduleReuseStmt") == 0)
 		nt.ntid = moduleReuseStmt;
@@ -397,23 +397,24 @@ terminal getTerminal(char* str) {
 void readGrammar(FILE* fp) {
 
 	for(int i = 0; i < _NUM_RULES; i++) {
-		char tmp[200];
-		fgets(tmp, sizeof(tmp), fp);
-		char* token = strtok(tmp, " \n");
+		char rule[200];
+		fgets(rule, sizeof(rule), fp);
+		char* token = strtok(rule, " \n");
 		g[i].NT = getNonTerminal(token);
 
 		symbol S;
 		rhsnode* tmp = NULL;
-		while (token != NULL) {
+		while ((token = strtok(NULL, " \n")) != NULL) {
 			int TorNT = 1;
-			S = getNonTerminal(token);
+			S.NT = getNonTerminal(token);
+			strcpy(S.NT.name, token);
 
-			if (S.ntid == -1) {
-				S = getTerminal(token);
+			if (S.NT.ntid == -1) {
+				S.T = getTerminal(token);
+				strcpy(S.T.name, token);
 				TorNT = 0;
 			}
 
-			strcpy(S.name, token);
 			rhsnode* newNode = (rhsnode*) malloc(sizeof(rhsnode));
 			newNode->S = S;
 			newNode->TorNT = TorNT;
@@ -427,7 +428,27 @@ void readGrammar(FILE* fp) {
 
 			tmp->next = newNode;
 			tmp = tmp->next;
-			token = strtok(NULL, " \n");
 		}
+
+	}
+}
+
+
+int main() {
+	fp = fopen("grammar.txt", "r");
+	readGrammar(fp);
+
+	for(int i = 0; i < _NUM_RULES; i++) {
+		printf("%s ", g[i].NT.name);
+		rhsnode* tmp = g[i].head;
+		while(tmp != NULL) {
+			if(tmp->TorNT)
+				printf("%s ", tmp->S.NT.name);
+			else
+				printf("%s ", tmp->S.T.name);
+
+			tmp = tmp->next;
+		}
+		printf("\n");
 	}
 }
