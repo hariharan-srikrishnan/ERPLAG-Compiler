@@ -1,0 +1,29 @@
+def << testfunc >> {
+	this is greater than > < 
+	++
+	==
+	** << comment you there >> **
+	this is line 6 + 0
+	[(9!=9);]
+	}
+
+integer a = 5;
+_what_ever_ is This #@1
+while  (go): false true
+error: a.b
+
+5.4
+5.55555
+5e15
+6.7e4
+6.7e4+4 //error
+6.73424e+10
+
+abcdefghijklmnopqrstuvwxyzabcde
+"
+void main(){
+	integer a := 5;
+	int b = 3;
+	print("$%^d");
+	print('~')
+}a
