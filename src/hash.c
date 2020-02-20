@@ -5,17 +5,20 @@
 
 
 hashtable* createTable(int tableSize) {
+	printf("Creating lookup hash table... ");
 	hashtable* t = (hashtable*) malloc(sizeof(hashtable));
 	t->head = (node**) malloc(sizeof(node*) * tableSize);
 	for(int i = 0; i < tableSize; i++) 
 		t->head[i] = NULL;
 
+	printf("Lookup hash table successfully created\n");
 	t->elementCount = 0;
 	return t;
 }
 
 
 hashtable* insert(hashtable* t, int tableSize, char** keywords, int* keywordTokens, int num_keywords) {
+	printf("Loading lookup table... ");
 	for(int index = 0; index < num_keywords; index++) {
 
 		int hashValue = hashFunction(keywords[index], tableSize);
@@ -36,7 +39,7 @@ hashtable* insert(hashtable* t, int tableSize, char** keywords, int* keywordToke
 		newNode->token = keywordTokens[index];
 		newNode->next = NULL;
 		t->elementCount++;
-		printf("Inserted: %s %d\n", keywords[index], keywordTokens[index]);
+		// printf("Inserted: %s %d\n", keywords[index], keywordTokens[index]);
 
 		if(t->head[hashValue] == NULL)
 			t->head[hashValue] = newNode;
@@ -44,6 +47,7 @@ hashtable* insert(hashtable* t, int tableSize, char** keywords, int* keywordToke
 		else
 			tmp->next = newNode;
 	}
+	printf("Lookup hash table loaded.\n");
 	
 	return t;
 } 

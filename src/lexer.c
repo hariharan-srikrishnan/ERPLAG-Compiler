@@ -155,10 +155,13 @@ void getStream(FILE* fp) {
 		exit(0);
 	}
 
+	start = buffer1;
+	current = buffer1;
 	// read from file into buffer, and terminate it by EOF
 	int size = fread(buffer1, sizeof(char), BUFFER_SIZE, fp);
 	t = createTable(tableSize);
 	t = insert(t, tableSize, keywords, keywordTokens, _NUM_KEYWORDS);
+
 }
 
 
@@ -315,6 +318,10 @@ token getNextToken() {
 	while(1) {
 
 		// error handling
+		if(error > 0) {
+			retract(1);
+		}
+
 		switch(error) {
 
 			case 0:
@@ -330,18 +337,18 @@ token getNextToken() {
 				break;
 
 			case 3:
-				printf("Expected a . at line number: %d", lineno);
+				printf("Expected another . at line number: %d", lineno);
 				break;
 
 			case 4:
-				printf("Expected a = at line number: %d", lineno);
+				printf("Expected another = at line number: %d", lineno);
 				break;
 
 		}
 
 		if (error >= 0) {
 			getLexeme();
-			printf(".\tEncountered lexeme: %s.\n", lexeme);
+			printf("\tEncountered lexeme: %s\n", lexeme);
 			state = 0;
 			error = -1;
 		}
@@ -350,11 +357,15 @@ token getNextToken() {
 		switch(state) {
 
 			case 0: c = nextchar();
-					if (c == ' ' || c == '\t')
+					if (c == ' ' || c == '\t') {
 						state = 0;
+						getLexeme();
+					}
 
-					else if (c == '\n')
+					else if (c == '\n') {
 						lineno++;
+						getLexeme();
+					}
 
 					else if (c >= '0' && c <= '9')
 						state = 1;
@@ -441,7 +452,7 @@ token getNextToken() {
 					if (c >= '0' && c <= '9')
 						state = 4;
 
-					else
+					else 
 						error = 1;
 
 					break;
@@ -522,15 +533,17 @@ token getNextToken() {
 					 if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
 					 	state = 12;
 
-					 else 
+					 else {
 					 	state = 13;
+					 	// retract(1);
+					 }
 
 					 break;
 
 			// keyword or identifier?
 			case 13: retract(1);
-					 t.tid = isKeyword(lexeme);
 					 getLexeme();
+					 t.tid = isKeyword(lexeme);
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 return t;
@@ -584,9 +597,22 @@ token getNextToken() {
 			// COMMENTS - do not tokenize
 			case 20: while(1) {
 					 c = nextchar(); 
+					 
+					 if(c == 0) {
+					 	t.tid = ENDMARKER;
+					 	getLexeme();
+					 	strcpy(t.lexeme, "comment");
+					 	return t;
+					 }
+
+					 else if(c == '\n') {
+					 	lineno++;
+					 }
+
 					 	if (c == '*') {
 					 		char d = nextchar();
 					 		if (d == '*') {
+					 			state = 0;
 					 			break;
 					 		}
 					 	}
@@ -676,8 +702,9 @@ token getNextToken() {
 					 if (c == '=')
 					 	state = 32;
 
-					 else 
+					 else
 					 	error = 4;
+					 	
 
 					 break;
 
