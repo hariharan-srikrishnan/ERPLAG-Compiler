@@ -90,7 +90,7 @@ int readBuffer1, readBuffer2;
 char *start, *current; // current points to the location we will read the next character from
 char lexeme[25];
 int lineno = 1;
-
+int testIdentifierLength = 0;
 FILE* fp;
 
 // create hash table	
@@ -123,7 +123,7 @@ void removeComments(char *testcaseFile, char *cleanFile) {
 	}
 	char buffer[_MAX_INPUT_FILE_SIZE];
 	output = fopen(cleanFile, "w");
-	fread(buffer, _MAX_INPUT_FILE_SIZE, 1, input);
+	int sz = fread(buffer, _MAX_INPUT_FILE_SIZE, 1, input);
 
 	// removing comments from buffer
 	int open = 0;
@@ -155,6 +155,7 @@ void getStream(FILE* fp) {
 		exit(0);
 	}
 
+	testIdentifierLength = 0;
 	start = buffer1;
 	current = buffer1;
 	// read from file into buffer, and terminate it by EOF
@@ -180,7 +181,6 @@ void getLexeme() {
 		while(temp != current) {
 			
 			if(loc == 20) {
-				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 				break;
 			}
 
@@ -194,7 +194,6 @@ void getLexeme() {
 		while(temp != buffer1 + BUFFER_SIZE) {
 			
 			if(loc == 20) {
-				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 				break;
 			}
 
@@ -213,7 +212,6 @@ void getLexeme() {
 		while(temp != buffer2 + BUFFER_SIZE) {
 			
 			if(loc == 20) {
-				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 				break;
 			}
 
@@ -224,7 +222,6 @@ void getLexeme() {
 		while(temp != current) {
 			
 			if(loc == 20) {
-				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 				break;
 			}
 
@@ -238,7 +235,6 @@ void getLexeme() {
 		while(temp != current) {
 			
 			if(loc == 20) {
-				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 				break;
 			}
 
@@ -249,6 +245,10 @@ void getLexeme() {
 	}
 
 	// Finally case
+	if(loc >= 20 && testIdentifierLength == 1) {
+		printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+	}
+	testIdentifierLength = 0;
 	start = current;
 	lexeme[loc++] = '\0';
 }
@@ -572,6 +572,7 @@ token getNextToken() {
 
 			// keyword or identifier?
 			case 13: retract(1);
+					 testIdentifierLength = 1;
 					 getLexeme();
 					 t.tid = isKeyword(lexeme);
 					 strcpy(t.lexeme, lexeme);
@@ -626,8 +627,8 @@ token getNextToken() {
 
 			// COMMENTS - do not tokenize
 			case 20: while(1) {
-					 c = nextchar(); 
 					 
+					 c = nextchar(); 
 					 if(c == 0) {
 					 	t.tid = ENDMARKER;
 					 	getLexeme();
@@ -642,12 +643,12 @@ token getNextToken() {
 					 	if (c == '*') {
 					 		char d = nextchar();
 					 		if (d == '*') {
-					 			state = 0;
+					 			// state = 0;
 					 			break;
 					 		}
 					 	}
 					 }
-
+					 getLexeme();
 					 state = 0;
 					 break;
 
