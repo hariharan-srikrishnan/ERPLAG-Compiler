@@ -15,6 +15,7 @@ extern int readBuffer1, readBuffer2;
 extern char *start, *current; // current points to the location we will read the next character from
 extern char lexeme[];
 extern int lineno;
+extern int testIdentifierLength;
 
 extern FILE* fp;
 
