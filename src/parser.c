@@ -5,8 +5,8 @@
 
 
 const int _NUM_RULES = 105;
-const int _NUM_TERMINALS = 0; // verify
-const int _NUM_NONTERMINALS = 0; // verify
+const int _NUM_TERMINALS = 62; // verify
+const int _NUM_NONTERMINALS = 56; // verify
 
 FILE* fp;
 grammar g;
@@ -200,16 +200,39 @@ terminal getTerminal() {
 
 // read grammar from file and populate data structure
 void readGrammar(FILE* fp) {
+
 	for(int i = 0; i < _NUM_RULES; i++) {
-		char lhs[30];
-		fscanf(fp, "%s", lhs);
-		g[i].NT = getNonTerminal(lhs)
+		char tmp[200];
+		fgets(tmp, sizeof(tmp), fp);
+		char* token = strtok(tmp, " \n");
+		g[i].NT = getNonTerminal(token);
 
-		char tmp[25];
-		fscanf(fp, "%s", tmp);
-		rhsnode* firstNode = (rhsnode*) malloc(sizeof*rhsnode);
-		firstNode->s = 
-		g[i].head = firstNode;
+		symbol S;
+		rhsnode* tmp = NULL;
+		while (token != NULL) {
+			int TorNT = 1;
+			S = getNonTerminal(token);
 
+			if (S.ntid == -1) {
+				S = getTerminal(token);
+				TorNT = 0;
+			}
+
+			strcpy(S.name, token);
+			rhsnode* newNode = (rhsnode*) malloc(sizeof(rhsnode));
+			newNode->S = S;
+			newNode->TorNT = TorNT;
+			newNode->next = NULL;
+
+			if (g[i].head == NULL) {
+				g[i].head = newNode;
+				tmp = newNode;
+				continue;
+			}
+
+			tmp->next = newNode;
+			tmp = tmp->next;
+			token = strtok(NULL, " \n");
+		}
 	}
 }
