@@ -435,7 +435,7 @@ void readGrammar(FILE* fp) {
 
 
 int main() {
-	fp = fopen("grammar.txt", "r");
+	fp = fopen("../grammar.txt", "r");
 	readGrammar(fp);
 
 	for(int i = 0; i < _NUM_RULES; i++) {
