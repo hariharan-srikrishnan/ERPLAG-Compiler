@@ -178,6 +178,12 @@ void getLexeme() {
 	// Case 1: start in buffer 1 and current in buffer 1
 	if((buffer1 <= start) && (start < buffer1 + BUFFER_SIZE) && (buffer1 <= current) && (current < buffer1 + BUFFER_SIZE)) {
 		while(temp != current) {
+			
+			if(loc == 20) {
+				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+				break;
+			}
+
 			lexeme[loc++] = *temp;
 			temp++;
 		}
@@ -186,7 +192,13 @@ void getLexeme() {
 	// Case 2: start in buffer 1 and current in buffer 2
 	else if((buffer1 <= start) && (start < buffer1 + BUFFER_SIZE) && (buffer2 <= current) && (current < buffer2 + BUFFER_SIZE)) {
 		while(temp != buffer1 + BUFFER_SIZE) {
-			lexeme[loc++] = *temp;
+			
+			if(loc == 20) {
+				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+				break;
+			}
+
+ 			lexeme[loc++] = *temp;
 			temp++;
 		}
 		temp = buffer2;
@@ -199,11 +211,23 @@ void getLexeme() {
 	// Case 3: start in buffer 2 and current in buffer 1
 	else if((buffer2 <= start) && (start < buffer2 + BUFFER_SIZE) && (buffer1 <= current) && (current < buffer1 + BUFFER_SIZE)) {
 		while(temp != buffer2 + BUFFER_SIZE) {
+			
+			if(loc == 20) {
+				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+				break;
+			}
+
 			lexeme[loc++] = *temp;
 			temp++;
 		}
 		temp = buffer1;
 		while(temp != current) {
+			
+			if(loc == 20) {
+				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+				break;
+			}
+
 			lexeme[loc++] = *temp;
 			temp++;
 		}
@@ -212,6 +236,12 @@ void getLexeme() {
 	// Case 4: start in buffer 2 and current in buffer 2
 	else {
 		while(temp != current) {
+			
+			if(loc == 20) {
+				printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+				break;
+			}
+
 			lexeme[loc++] = *temp;
 			temp++;
 		}
