@@ -24,6 +24,8 @@ typedef enum {
 	NE,
 	DEF,
 	ENDDEF,
+	DRIVERDEF,
+	DRIVERENDDEF,
 	COLON,
 	RANGEOP,
 	SEMICOL,

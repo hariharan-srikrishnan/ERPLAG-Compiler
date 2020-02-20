@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lexerDef.h"
+#include "lexer.h"
 #include "parserDef.h"
 
 
@@ -193,8 +195,201 @@ nonterminal getNonTerminal(char* str) {
 }
 
 
-terminal getTerminal() {
+terminal getTerminal(char* str) {
+	terminal t;
+	strcpy(t.name, str);
 
+	if (strcmp(str, "PLUS") == 0) 
+		t.tid = PLUS;
+	
+	else if (strcmp(str, "MINUS") == 0)
+		t.tid = MINUS;
+	
+	else if (strcmp(str, "MUL") == 0)
+		t.tid = MUL;
+
+	else if (strcmp(str, "DIV") == 0)
+		t.tid = DIV;
+
+	else if (strcmp(str, "LT") == 0)
+		t.tid = LT;
+
+	else if (strcmp(str, "LE") == 0)
+		t.tid = LE;
+
+	else if (strcmp(str, "GT") == 0)
+		t.tid = GT;
+
+	else if (strcmp(str, "GE") == 0)
+		t.tid = GE;
+
+	else if (strcmp(str, "EQ") == 0)
+		t.tid = EQ;
+
+	else if (strcmp(str, "NE") == 0)
+		t.tid = NE;
+
+	else if (strcmp(str, "DEF") == 0)
+		t.tid = DEF;
+
+	else if (strcmp(str, "ENDDEF") == 0)
+		t.tid = ENDDEF;
+
+	else if (strcmp(str, "COLON") == 0)
+		t.tid = COLON;
+
+	else if (strcmp(str, "RANGEOP") == 0)
+		t.tid = RANGEOP;
+
+	else if (strcmp(str, "SEMICOL") == 0)
+		t.tid = REAL;
+
+	else if (strcmp(str, "COMMA") == 0)
+		t.tid = COMMA;
+
+	else if (strcmp(str, "ASSIGNOP") == 0)
+		t.tid = ASSIGNOP;
+
+	else if (strcmp(str, "SQBO") == 0)
+		t.tid = SQBO;
+
+	else if (strcmp(str, "SQBC") == 0)
+		t.tid = SQBC;
+
+	else if (strcmp(str, "BO") == 0)
+		t.tid = BO;
+
+	else if (strcmp(str, "BC") == 0)
+		t.tid = BC;
+
+	else if (strcmp(str, "COMMENTMARK") == 0)
+		t.tid = COMMENTMARK;
+
+	else if (strcmp(str, "INTEGER") == 0)
+		t.tid = INTEGER;
+
+	else if (strcmp(str, "REAL") == 0)
+		t.tid = REAL;
+
+	else if (strcmp(str, "BOOLEAN") == 0)
+		t.tid = BOOLEAN;
+
+	else if (strcmp(str, "OF") == 0)
+		t.tid = OF;
+
+	else if (strcmp(str, "ARRAY") == 0)
+		t.tid = ARRAY;
+
+	else if (strcmp(str, "START") == 0)
+		t.tid = START;
+
+	else if (strcmp(str, "END") == 0)
+		t.tid = END;
+
+	else if (strcmp(str, "DECLARE") == 0)
+		t.tid = DECLARE;
+
+	else if (strcmp(str, "MODULE") == 0)
+		t.tid = MODULE;
+
+	else if (strcmp(str, "DRIVER") == 0)
+		t.tid = DRIVER;
+
+	else if (strcmp(str, "PROGRAM") == 0)
+		t.tid = PROGRAM;
+
+	else if (strcmp(str, "RECORD") == 0)
+		t.tid = RECORD;
+
+	else if (strcmp(str, "TAGGED") == 0)
+		t.tid = TAGGED;
+
+	else if (strcmp(str, "UNION") == 0)
+		t.tid = UNION;
+
+	else if (strcmp(str, "GET_VALUE") == 0)
+		t.tid = GET_VALUE;
+
+	else if (strcmp(str, "PRINT") == 0)
+		t.tid = PRINT;
+
+	else if (strcmp(str, "USE") == 0)
+		t.tid = USE;
+
+	else if (strcmp(str, "WITH") == 0)
+		t.tid = WITH;
+
+	else if (strcmp(str, "PARAMETERS") == 0)
+		t.tid = PARAMETERS;
+
+	else if (strcmp(str, "TRUE") == 0)
+		t.tid = TRUE;
+
+	else if (strcmp(str, "FALSE") == 0)
+		t.tid = FALSE;
+
+	else if (strcmp(str, "TAKES") == 0)
+		t.tid = TAKES;
+
+	else if (strcmp(str, "INPUT") == 0)
+		t.tid = INPUT;
+
+	else if (strcmp(str, "RETURNS") == 0)
+		t.tid = RETURNS;
+
+	else if (strcmp(str, "AND") == 0)
+		t.tid = AND;
+
+	else if (strcmp(str, "OR") == 0)
+		t.tid = OR;
+
+	else if (strcmp(str, "FOR") == 0)
+		t.tid = FOR;
+
+	else if (strcmp(str, "IN") == 0)
+		t.tid = IN;
+
+	else if (strcmp(str, "SWITCH") == 0)
+		t.tid = SWITCH;
+
+	else if (strcmp(str, "CASE") == 0)
+		t.tid = CASE;
+
+	else if (strcmp(str, "BREAK") == 0)
+		t.tid = BREAK;
+
+	else if (strcmp(str, "DEFAULT") == 0)
+		t.tid = DEFAULT;
+
+	else if (strcmp(str, "WHILE") == 0)
+		t.tid = WHILE;
+
+	else if (strcmp(str, "ID") == 0)
+		t.tid = ID;
+
+	else if (strcmp(str, "NUM") == 0)
+		t.tid = NUM;
+
+	else if (strcmp(str, "RNUM") == 0)
+		t.tid = RNUM;
+
+	else if (strcmp(str, "ENDMARKER") == 0)
+		t.tid = ENDMARKER;
+
+	else if (strcmp(str, "EPSILON") == 0)
+		t.tid = EPSILON;
+	
+	else if (strcmp(str, "DRIVERDEF") == 0)
+		t.tid = DRIVERDEF;
+
+	else if (strcmp(str, "DRIVERENDDEF") == 0)
+		t.tid = EPSILON;
+
+	// error
+	else
+		t.tid = -1;
+
+	return t;
 }
 
 
