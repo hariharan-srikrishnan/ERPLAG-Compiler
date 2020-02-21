@@ -7,7 +7,7 @@
 
 int main(){
 
-	fp = fopen("t1.txt","r");
+	fp = fopen("test1.txt","r");
 	getStream(fp);
 
 	token tk;

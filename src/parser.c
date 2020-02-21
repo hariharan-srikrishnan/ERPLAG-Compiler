@@ -13,6 +13,8 @@ const int _NUM_NONTERMINALS = 56; // verify
 FILE* fp;
 grammar g;
 
+unsigned long long int firstSet[_NUM_NONTERMINALS];
+unsigned long long int followSet[_NUM_NONTERMINALS];
 
 // return populated non-terminal structure
 nonterminal getNonTerminal(char* str) {
@@ -192,6 +194,15 @@ nonterminal getNonTerminal(char* str) {
 		nt.ntid = -1;
 
 	return nt;
+}
+
+inline unsigned long long int setUnion(unsigned long long int a, unsigned long long int b) {
+	return a|b;
+}
+
+
+inline unsigned long long int setIntersection(unsigned long long int a, unsigned long long int b) {
+	return a&b;
 }
 
 
