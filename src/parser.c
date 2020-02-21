@@ -235,6 +235,12 @@ terminal getTerminal(char* str) {
 	else if (strcmp(str, "ENDDEF") == 0)
 		t.tid = ENDDEF;
 
+	else if (strcmp(str, "DRIVERDEF") == 0)
+		t.tid = DRIVERDEF;
+
+	else if (strcmp(str, "DRIVERENDDEF") == 0)
+		t.tid = DRIVERENDDEF;
+
 	else if (strcmp(str, "COLON") == 0)
 		t.tid = COLON;
 
@@ -377,12 +383,6 @@ terminal getTerminal(char* str) {
 		t.tid = ENDMARKER;
 
 	else if (strcmp(str, "EPSILON") == 0)
-		t.tid = EPSILON;
-	
-	else if (strcmp(str, "DRIVERDEF") == 0)
-		t.tid = DRIVERDEF;
-
-	else if (strcmp(str, "DRIVERENDDEF") == 0)
 		t.tid = EPSILON;
 
 	// error

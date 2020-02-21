@@ -96,10 +96,4 @@ typedef struct {
 } grammar[105];
 
 
-typedef struct {
-	symbol S;
-	
-} parsingTable;
-
-
 #endif
