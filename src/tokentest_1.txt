@@ -18,6 +18,8 @@ error: a.b
 6.7e4
 6.7e4+4 //error
 6.73424e+10
+123.2e+a
+:===
 
 abcdefghijklmnopqrstuvwxyzabcde
 "

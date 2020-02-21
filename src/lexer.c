@@ -377,12 +377,12 @@ token getNextToken() {
 				printf("Invalid character at line number: %d", lineno);
 				break;
 
-			case 1:
-				redColor();
-				printf("Error: ");
-				resetColor();
-				printf("Expected a number at line number: %d", lineno);
-				break;
+			// case 1:
+			// 	redColor();
+			// 	printf("Error: ");
+			// 	resetColor();
+			// 	printf("Expected a number at line number: %d", lineno);
+			// 	break;
 
 			// case 2:
 			// 	redColor();
@@ -515,6 +515,7 @@ token getNextToken() {
 
 					else {
 						retract(2);
+						t.tid = NUM;
 						getLexeme();
 						strcpy(t.lexeme, lexeme);
 						t.lineNo = lineno;
@@ -564,8 +565,14 @@ token getNextToken() {
 					if (c >= '0' && c <= '9')
 						state = 8;
 
-					else
-						error = 1;
+					else {
+						retract(3);
+						t.tid = RNUM;
+						getLexeme();
+						strcpy(t.lexeme, lexeme);
+						t.lineNo = lineno;
+						return t;
+					}
 
 					break;
 
@@ -605,10 +612,8 @@ token getNextToken() {
 					 if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
 					 	state = 12;
 
-					 else {
+					 else 
 					 	state = 13;
-					 	// retract(1);
-					 }
 
 					 break;
 
@@ -826,12 +831,26 @@ token getNextToken() {
 					 return t;
 
 			// >>
-			case 37: t.tid = ENDDEF;
+			case 37: c = nextchar();
+					 if (c == '>')
+					 	state = 45;
+
+					 else {
+					 	retract(1);
+					 	t.tid = ENDDEF;
+						getLexeme();
+						strcpy(t.lexeme, lexeme);
+						t.lineNo = lineno;
+						return t;
+					 }
+
+			// >>>
+			case 45: t.tid = DRIVERENDDEF;
 					 getLexeme();
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;
 					 return t;
-
+					 
 			// GE
 			case 38: t.tid = GE;
 					 getLexeme();
@@ -861,11 +880,28 @@ token getNextToken() {
 					 return t;
 
 			// <<
-			case 41: t.tid = DEF;
+			case 41: c = nextchar();
+					 if (c == '<') 
+					 	state = 44;
+
+					 else {
+					 	retract(1);
+					 	t.tid = DEF;
+						getLexeme();
+						strcpy(t.lexeme, lexeme);
+						t.lineNo = lineno;
+						return t;
+					 }
+
+					 break;
+
+			// <<<
+			case 44: t.tid = DRIVERDEF;
 					 getLexeme();
 					 strcpy(t.lexeme, lexeme);
-					 t.lineNo = lineno;
-					 return t;
+					 t.lineNo = lineno; 
+				 	 return t;
+					 
 
 			// LE
 			case 42: t.tid = LE;
