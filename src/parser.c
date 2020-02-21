@@ -100,7 +100,7 @@ nonterminal getNonTerminal(char* str) {
 	else if (strcmp(str, "lvalueARRStmt") == 0)
 		nt.ntid = lvalueARRStmt;
 
-	else if (strcmp(str, "_index") == 0)
+	else if (strcmp(str, "index") == 0)
 		nt.ntid = _index;
 
 	else if (strcmp(str, "moduleReuseStmt") == 0)
@@ -178,7 +178,7 @@ nonterminal getNonTerminal(char* str) {
 	else if (strcmp(str, "value") == 0)
 		nt.ntid = value;
 
-	else if (strcmp(str, "_default") == 0)
+	else if (strcmp(str, "default") == 0)
 		nt.ntid = _default;
 
 	else if (strcmp(str, "iterativeStmt") == 0)
