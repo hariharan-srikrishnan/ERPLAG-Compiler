@@ -2,16 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lexerDef.h"
-// #include "lexer.h"
+#include "lexer.h"
 #include "parserDef.h"
+#include "parserutils.h" // includes ADT definitions
 
+#define _ERROR -1
+#define _SYN -2
 
 const int _NUM_RULES = 105;
 const int _NUM_TERMINALS = 62; // verify
-const int _NUM_NONTERMINALS = 56; // verify
+const int _NUM_NONTERMINALS = 57; // verify
 
 FILE* fp;
 grammar g;
+
+int parseTable[_NUM_NONTERMINALS][_NUM_TERMINALS];
 
 
 // return populated non-terminal structure
@@ -111,6 +116,9 @@ nonterminal getNonTerminal(char* str) {
 
 	else if (strcmp(str, "idList") == 0)
 		nt.ntid = idList;
+
+	else if (strcmp(str, "N3") == 0)
+		nt.ntid = N3;
 
 	else if (strcmp(str, "expression") == 0)
 		nt.ntid = expression;
