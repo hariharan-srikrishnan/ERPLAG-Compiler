@@ -6,6 +6,7 @@
 
 t_node* parseTree;
 
+
 // utility function to create new node for stack
 rhsnode* createNode(symbol S, int TorNT) {
 	rhsnode* newNode = (rhsnode*) malloc(sizeof(rhsnode));

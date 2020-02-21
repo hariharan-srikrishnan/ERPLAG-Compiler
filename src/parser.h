@@ -10,4 +10,7 @@ extern grammar g;
 
 extern int parseTable[_NUM_NONTERMINALS][_NUM_TERMINALS];
 
+extern unsigned long long int firstSet[_NUM_NONTERMINALS];
+extern unsigned long long int followSet[_NUM_NONTERMINALS];
+
 #endif
