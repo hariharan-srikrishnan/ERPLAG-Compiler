@@ -377,19 +377,19 @@ token getNextToken() {
 				printf("Invalid character at line number: %d", lineno);
 				break;
 
-			// case 1:
-			// 	redColor();
-			// 	printf("Error: ");
-			// 	resetColor();
-			// 	printf("Expected a number at line number: %d", lineno);
-			// 	break;
+			case 1:
+				redColor();
+				printf("Error: ");
+				resetColor();
+				printf("Expected a number at line number: %d", lineno);
+				break;
 
-			// case 2:
-			// 	redColor();
-			// 	printf("Error: ");
-			// 	resetColor();
-			// 	printf("Expected number or + or - at line number: %d", lineno);
-			// 	break;
+			case 2:
+				redColor();
+				printf("Error: ");
+				resetColor();
+				printf("Expected number or + or - at line number: %d", lineno);
+				break;
 
 			case 3:
 				redColor();
@@ -513,7 +513,7 @@ token getNextToken() {
 					if (c >= '0' && c <= '9')
 						state = 4;
 
-					else {
+					else if (c == '.') {
 						retract(2);
 						t.tid = NUM;
 						getLexeme();
@@ -521,6 +521,9 @@ token getNextToken() {
 						t.lineNo = lineno;
 						return t;
 					}
+
+					else
+						error = 1;
 
 					break;
 
@@ -550,14 +553,8 @@ token getNextToken() {
 					else if (c >= '0' && c <= '9')
 						state = 10;
 
-					else {
-						retract(2);
-						t.tid = RNUM;
-						getLexeme();
-						strcpy(t.lexeme, lexeme);
-						t.lineNo = lineno;
-						return t;
-					}
+					else 
+						error = 2;
 
 					break;
 
@@ -565,14 +562,8 @@ token getNextToken() {
 					if (c >= '0' && c <= '9')
 						state = 8;
 
-					else {
-						retract(3);
-						t.tid = RNUM;
-						getLexeme();
-						strcpy(t.lexeme, lexeme);
-						t.lineNo = lineno;
-						return t;
-					}
+					else 
+						error = 1;
 
 					break;
 
