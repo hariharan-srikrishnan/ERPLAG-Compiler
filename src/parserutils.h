@@ -3,7 +3,7 @@
 #include "parserDef.h"
 
 
-// stack
+// stack - just don't use prev pointer
 typedef struct {
 	rhsnode* top;
 } stack;

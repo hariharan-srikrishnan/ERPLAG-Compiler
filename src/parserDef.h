@@ -87,6 +87,7 @@ typedef struct _rhsnode {
 	symbol S;
 	int TorNT; // 0: T, 1: NT
 	struct _rhsnode* next;
+	struct _rhsnode* prev;
 } rhsnode;
 
 

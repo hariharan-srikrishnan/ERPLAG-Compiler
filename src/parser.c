@@ -440,6 +440,7 @@ void readGrammar(FILE* fp) {
 			newNode->S = S;
 			newNode->TorNT = TorNT;
 			newNode->next = NULL;
+			newNode->prev = NULL;
 
 			if (g[i].head == NULL) {
 				g[i].head = newNode;
@@ -448,6 +449,7 @@ void readGrammar(FILE* fp) {
 			}
 
 			tmp->next = newNode;
+			newNode->prev = tmp;
 			tmp = tmp->next;
 		}
 
@@ -462,14 +464,23 @@ int main() {
 	for(int i = 0; i < _NUM_RULES; i++) {
 		printf("%s ", g[i].NT.name);
 		rhsnode* tmp = g[i].head;
-		while(tmp != NULL) {
+		while(tmp->next != NULL) {
+			// if(tmp->TorNT)
+			// 	printf("%s ", tmp->S.NT.name);
+			// else
+			// 	printf("%s ", tmp->S.T.name);
+
+			tmp = tmp->next;
+		}
+
+		while (tmp != g[i].head) {
 			if(tmp->TorNT)
 				printf("%s ", tmp->S.NT.name);
 			else
 				printf("%s ", tmp->S.T.name);
 
-			tmp = tmp->next;
+			tmp = tmp->prev;
 		}
-		printf("\n");
+		printf("%s \n", tmp->S.NT.name);
 	}
 }
