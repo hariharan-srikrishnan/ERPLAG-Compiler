@@ -112,6 +112,19 @@ char* reverseMap(int tid) {
 	}
 }
 
+// functions to augment standard output color
+void redColor() {
+  printf("\033[1;31m");
+}
+
+void magentaColor() {
+  printf("\033[1;35m");
+}
+
+void resetColor() {
+  printf("\033[0m");
+}
+
 
 void removeComments(char *testcaseFile, char *cleanFile) {
 	// ASSUMPTION : input source code file does not exceed _MAX_INPUT_FILE_SIZE characters
@@ -246,7 +259,10 @@ void getLexeme() {
 
 	// Finally case
 	if(loc >= 20 && testIdentifierLength == 1) {
-		printf("Warning: Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+		magentaColor();
+		printf("Warning: ");
+		resetColor();
+		printf("Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 	}
 	testIdentifierLength = 0;
 	start = current;
@@ -355,22 +371,37 @@ token getNextToken() {
 		switch(error) {
 
 			case 0:
+				redColor();
+				printf("Error: ");
+				resetColor();
 				printf("Invalid character at line number: %d", lineno);
 				break;
 
 			case 1:
+				redColor();
+				printf("Error: ");
+				resetColor();
 				printf("Expected a number at line number: %d", lineno);
 				break;
 
 			case 2:
+				redColor();
+				printf("Error: ");
+				resetColor();
 				printf("Expected number or + or - at line number: %d", lineno);
 				break;
 
 			case 3:
+				redColor();
+				printf("Error: ");
+				resetColor();
 				printf("Expected another . at line number: %d", lineno);
 				break;
 
 			case 4:
+				redColor();
+				printf("Error: ");
+				resetColor();
 				printf("Expected another = at line number: %d", lineno);
 				break;
 
@@ -482,8 +513,13 @@ token getNextToken() {
 					if (c >= '0' && c <= '9')
 						state = 4;
 
-					else 
-						error = 1;
+					else {
+						retract(2);
+						getLexeme();
+						strcpy(t.lexeme, lexeme);
+						t.lineNo = lineno;
+						return t;
+					}
 
 					break;
 
