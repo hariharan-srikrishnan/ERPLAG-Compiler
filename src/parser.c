@@ -172,6 +172,7 @@ void computeFirstSets() {
 }
 
 
+// print first set into file
 void printFirstSet(FILE* f) {
 	printf("First Sets:\n");
 	
@@ -280,6 +281,7 @@ void computeFollowSets() {
 }
 
 
+// print follow set into file
 void printFollowSet(FILE* f) {
 	printf("Follow Sets:\n");
 
@@ -302,24 +304,60 @@ void computeFirstAndFollowSets() {
 }
 
 
+// populate predictive parse table
 void createParseTable() {
-	for(int i = 0; i < _NUM_RULES; i++) {
-		nonterminal nt = g[i].NT;
-		int index = nt.ntid; // index into parse table
+	for(int i = 0; i < _NUM_NONTERMINALS; i++) {
 		for(int j = 0; j < _NUM_TERMINALS; j++) {
-			if ((firstSet[index] & (unsigned long long int)1 << j) != 0) 
-				parseTable[index][j] = i;
-
-			else if ((followSet[index] & (unsigned long long int)1 << j) != 0)
-				parseTable[index][j] = _SYN;
-
-			else 
-				parseTable[index][j] = _ERROR;
+			parseTable[i][j] = _ERROR; // initializing all states to be error by default
+			if(setIntersection(followSet[i], (unsigned long long int)1 << j))
+				parseTable[i][j] = _SYN;
 		}
 	}
+
+
+	for(int i=0; i<_NUM_RULES; i++) {
+		nonterminal lhs = g[i].NT;
+		rhsnode* temp = g[i].head;
+		int nullable = 1;
+
+		while(temp != NULL) {
+		
+			if(temp->TorNT == 0) {
+				// symbol is a terminal
+				parseTable[lhs.ntid][temp->S.T.tid] = i;
+				break;
+			}
+
+			for(int j = _NUM_TERMINALS-1; j >= 0; j--) {
+				if( (j != EPSILON) && setIntersection(firstSet[temp->S.NT.ntid], (unsigned long long int)1 << j)) {
+					parseTable[lhs.ntid][j] = i;
+				}
+			}
+
+			if(setIntersection(firstSet[temp->S.NT.ntid], nullSet)) {
+				temp = temp -> next;
+			}
+		
+			else {
+				nullable = 0;
+				break;
+			}
+		}
+
+		if(!nullable)
+			continue;
+		
+		for(int j = _NUM_TERMINALS-1; j >= 0; j--) {
+			if(setIntersection(followSet[temp->S.NT.ntid], (unsigned long long int)1 << j)) {
+				parseTable[lhs.ntid][j] = i;
+			}
+		}
+	} 
+
 }
 
 
+// pretty print predictive parse table into a file
 void printParseTable(FILE* outfile) {
 
 	fprintf(outfile, "%23s", "");
@@ -332,6 +370,15 @@ void printParseTable(FILE* outfile) {
 		for(int j = 0; j < _NUM_TERMINALS; j++)
 			fprintf(outfile, "%13d", parseTable[i][j]);
 		fprintf(outfile, "\n");
+	}
+}
+
+	
+void parseInputSourceCode(char* filename) {
+	FILE* f = fopen(filename, "r");
+
+	while(1) {
+
 	}
 }
 
