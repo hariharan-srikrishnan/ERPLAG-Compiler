@@ -43,4 +43,12 @@ void push(stack* s, rhsnode* newNode);
 
 void pop(stack* s, int n);
 
+nonterminal getNonTerminal(char* str);
+
+char* getNonTerminalName(nonTermid ntid);
+
+terminal getTerminal(char* str);
+
+char* getTerminalName(tokenid tid);
+
 #endif
