@@ -94,7 +94,7 @@ typedef struct _rhsnode {
 typedef struct {
 	nonterminal NT;
 	rhsnode* head;
-} grammar[105];
+} grammar[110];
 
 
 #endif

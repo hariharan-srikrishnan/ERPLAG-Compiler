@@ -19,7 +19,7 @@ int parseTable[_NUM_NONTERMINALS][_NUM_TERMINALS];
 
 unsigned long long int firstSet[_NUM_NONTERMINALS];
 unsigned long long int followSet[_NUM_NONTERMINALS];
-unsigned long long int nullSet = (1LL << EPSILON);
+unsigned long long int nullSet = ((unsigned long long int)1 << EPSILON);
 
 
 static inline unsigned long long int setUnion(unsigned long long int a, unsigned long long int b) {
@@ -76,13 +76,12 @@ void readGrammar(FILE* fp) {
 
 
 void computeFirstSets() {
-	
 	/* initializing every first set to empty
 	 Assumption: Terminals are not included in the first set array
 					as their first sets are implicitly known
 	*/
 	for(int i=0; i<_NUM_NONTERMINALS; i++) {
-		firstSet[i] = 0LL;
+		firstSet[i] = (unsigned long long int)0;
 	} 
 
 
@@ -97,7 +96,7 @@ void computeFirstSets() {
 		nonterminal lhs = g[i].NT;
 		if(g[i].head->next == NULL) {
 			if(g[i].head->TorNT == 0 && (g[i].head->S).T.tid == EPSILON) {
-				firstSet[lhs.ntid] = setUnion(firstSet[i], nullSet);
+				firstSet[lhs.ntid] = setUnion(firstSet[lhs.ntid], nullSet);
 			}
 		}
 	}
@@ -130,17 +129,19 @@ void computeFirstSets() {
 			rhsnode* temp = g[i].head;
 			while(temp != NULL) {
 				// check if node has a terminal or a nonterminal
-					// fprintf(stderr, "Reach\n");
-				if(temp->TorNT == 0) { // node is a terminal
-					firstSet[lhs.ntid] = setUnion(firstSet[lhs.ntid], (1LL << temp->S.T.tid));
+				// fprintf(stderr, "Reach\n");
+				if(temp->TorNT == 0) { 
+					// node is a terminal
+					firstSet[lhs.ntid] = setUnion(firstSet[lhs.ntid], ((unsigned long long int)1 << temp->S.T.tid));
 					nullable = 0;
 					break;
 				}
-				else { // node is a nonterminal
+				else { 
+					// node is a nonterminal
 					// check if EPSILON is in first of this node
 					if(setIntersection(firstSet[temp->S.NT.ntid], nullSet)) {
 						// contains EPSILON
-						firstSet[lhs.ntid] = setUnion(firstSet[lhs.ntid], firstSet[temp->S.NT.ntid]);
+						firstSet[lhs.ntid] = setUnion(firstSet[lhs.ntid], firstSet[temp->S.NT.ntid] & ~nullSet);
 					}
 					else {
 						// does not contain EPSILON
@@ -157,8 +158,8 @@ void computeFirstSets() {
 			if(nullable) {
 				firstSet[i] = setUnion(firstSet[i], nullSet);
 			}
-
 		}
+
 		changed = 0;
 		for(int i=0; i<_NUM_NONTERMINALS; i++) {
 			if(firstSetCopy[i] != firstSet[i]) {
@@ -169,10 +170,98 @@ void computeFirstSets() {
 		free(firstSetCopy);
 	}
 	
+	
 }
 
 
 void computeFollowSets() {
+
+	/* initializing every follpw set to empty
+	 Assumption: Terminals are not included in the follow set array
+					as their follow sets are undefined
+	*/
+	for(int i=0; i<_NUM_NONTERMINALS; i++) {
+		followSet[i] = (unsigned long long int)0;
+	} 
+
+	// RULE 1: If S is the start symbol of the grammar, then Follow(S) = '$'
+	followSet[program] = setUnion(followSet[program], (unsigned long long int)1 << ENDMARKER);
+
+	/* Implementation of rules 2, 3, and 4
+		RULE 2: If there is a production A -> B C D,
+				then everything in (First(D) - EPSILON) is in follow(C)
+		RULE 3: If there is a production A -> B C D,
+				and First(D) contains EPSILON,
+				then everything in Follow(A) is in Follow(B)
+		RULE 4: If there is a production A -> B C,
+				then everything in Follow(A) is in Follow(B)
+	*/
+
+	int changed = 1; // parameter for iterative solution
+	while(changed) {
+		
+		// creating a copy of firstSet to check for change; loop termination condition
+		unsigned long long int* followSetCopy;
+		followSetCopy = calloc(_NUM_NONTERMINALS, sizeof(unsigned int long long));
+		for(int i=0; i<_NUM_NONTERMINALS; i++) {
+			followSetCopy[i] = followSet[i];
+		}
+
+		for(int i=0; i<_NUM_RULES; i++) {
+			nonterminal lhs = g[i].NT;
+			rhsnode* temp = g[i].head;
+			int nullable = 0;
+			unsigned long long int tempFirstSet;
+
+			while(temp->next != NULL)
+				temp = temp->next;
+			if(temp->TorNT == 1) {
+				followSet[temp->S.NT.ntid] = setUnion(followSet[temp->S.NT.ntid], followSet[lhs.ntid]);
+				if(setIntersection(firstSet[temp->S.NT.ntid], nullSet)) 
+					nullable = 1;
+				tempFirstSet = firstSet[temp->S.NT.ntid] & ~nullSet;
+
+			}
+			else {
+				tempFirstSet = (unsigned long long int)1 << temp->S.T.tid;
+			}
+			temp = temp->prev;
+			while(temp != NULL) {
+				if(temp->TorNT == 1) {
+					followSet[temp->S.NT.ntid] = setUnion(followSet[temp->S.NT.ntid], tempFirstSet);
+					if(nullable) {
+						followSet[temp->S.NT.ntid] = setUnion(followSet[temp->S.NT.ntid], followSet[lhs.ntid]);
+
+					}
+					if(setIntersection(firstSet[temp->S.NT.ntid], nullSet)) {
+						tempFirstSet = setUnion(tempFirstSet, firstSet[temp->S.NT.ntid] & ~nullSet);
+					}
+					else {
+						tempFirstSet = firstSet[temp->S.NT.ntid] & ~nullSet;
+						nullable = 0;
+					}
+				}
+
+				else {
+					tempFirstSet = (unsigned long long int)1 << temp->S.T.tid;
+					nullable = 0;
+				}
+
+				temp = temp -> prev;
+
+			}
+
+		}
+
+		changed = 0;
+		for(int i=0; i<_NUM_NONTERMINALS; i++) {
+			if(followSetCopy[i] != followSet[i]) {
+				changed = 1;
+				break;
+			}
+		}
+		free(followSetCopy);
+	}
 
 }
 
@@ -191,16 +280,16 @@ int main() {
 	for(int i = 0; i < _NUM_RULES; i++) {
 		printf("%s ", g[i].NT.name);
 		rhsnode* tmp = g[i].head;
-		while(tmp->next != NULL) {
-			// if(tmp->TorNT)
-			// 	printf("%s ", tmp->S.NT.name);
-			// else
-			// 	printf("%s ", tmp->S.T.name);
+		while(tmp != NULL) {
+			if(tmp->TorNT)
+				printf("%s ", tmp->S.NT.name);
+			else
+				printf("%s ", tmp->S.T.name);
 
 			tmp = tmp->next;
 		}
-
-		
+		putchar('\n');
+	
 		while (tmp != g[i].head) {
 			if(tmp->TorNT)
 				printf("%s ", tmp->S.NT.name);
@@ -210,11 +299,10 @@ int main() {
 			tmp = tmp->prev;
 		}
 		printf("%s \n", tmp->S.NT.name);
-		
-	}
-	*/
-	computeFirstSets();
-	
+	*/	
+	// }
+	computeFirstAndFollowSets();
+	/*
 	for(int i=0; i<_NUM_NONTERMINALS; i++) {
 		if(setIntersection(firstSet[i], nullSet)) {
 			printf("%d Nullable\n", i);
@@ -223,19 +311,32 @@ int main() {
 			printf("%d Not nullable\n", i);
 		}
 	}
-
-	
+	*/
 	printf("First Sets:\n");
+	
 	for(int i=0; i<_NUM_NONTERMINALS; i++) {
-		for(int j=63; j>=0; j--) {
-			if(setIntersection(firstSet[i], 1LL<<j)) {
-				putchar('1');
-			}
-			else {
-				putchar('0');
+		printf("%s ", getNonTerminalName(i));
+		for(int j=61; j>=0; j--) {
+			if(setIntersection(firstSet[i], (unsigned long long int)1<< j)) {
+				// if(strcmp(getTerminalName(j), "No Terminal") == 0)
+					// printf("NO TERMINAL: %d\n", j);
+				printf("%s ", getTerminalName(j));
 			}
 		}
-		putchar('\n');	
+		putchar('\n');
 	}
-	
+	putchar('\n');
+
+	printf("Follow Sets:\n");
+
+	for(int i=0; i<_NUM_NONTERMINALS; i++) {
+		printf("%s ", getNonTerminalName(i));
+		for(int j=61; j>=0; j--) {
+			if(setIntersection(followSet[i], (unsigned long long int)1<< j) != 0LL) {
+				printf("%s ", getTerminalName(j));
+			}
+		}
+		putchar('\n');
+	}
+	putchar('\n');
 }

@@ -463,7 +463,7 @@ terminal getTerminal(char* str) {
 		t.tid = RANGEOP;
 
 	else if (strcmp(str, "SEMICOL") == 0)
-		t.tid = REAL;
+		t.tid = SEMICOL;
 
 	else if (strcmp(str, "COMMA") == 0)
 		t.tid = COMMA;
@@ -659,7 +659,7 @@ char* getTerminalName(tokenid tid) {
 	else if (tid == RANGEOP)
 		return "RANGEOP";
 
-	else if (tid == REAL)
+	else if (tid == SEMICOL)
 		return "SEMICOL";
 
 	else if (tid == COMMA)
