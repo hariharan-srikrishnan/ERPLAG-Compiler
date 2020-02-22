@@ -169,8 +169,24 @@ void computeFirstSets() {
 		}
 		free(firstSetCopy);
 	}
+}
+
+
+void printFirstSet(FILE* f) {
+	printf("First Sets:\n");
 	
-	
+	for(int i=0; i<_NUM_NONTERMINALS; i++) {
+		fprintf(f, "%s ", getNonTerminalName(i));
+		for(int j=_NUM_TERMINALS-1; j>=0; j--) {
+			if(setIntersection(firstSet[i], (unsigned long long int)1<< j)) {
+				// if(strcmp(getTerminalName(j), "No Terminal") == 0)
+					// printf("NO TERMINAL: %d\n", j);
+				fprintf(f, "%s ", getTerminalName(j));
+			}
+		}
+		fputc('\n', f);
+	}
+	fputc('\n', f);
 }
 
 
@@ -202,7 +218,7 @@ void computeFollowSets() {
 		
 		// creating a copy of firstSet to check for change; loop termination condition
 		unsigned long long int* followSetCopy;
-		followSetCopy = calloc(_NUM_NONTERMINALS, sizeof(unsigned int long long));
+		followSetCopy = calloc(_NUM_NONTERMINALS, sizeof(unsigned long long int));
 		for(int i=0; i<_NUM_NONTERMINALS; i++) {
 			followSetCopy[i] = followSet[i];
 		}
@@ -250,7 +266,6 @@ void computeFollowSets() {
 				temp = temp -> prev;
 
 			}
-
 		}
 
 		changed = 0;
@@ -262,13 +277,62 @@ void computeFollowSets() {
 		}
 		free(followSetCopy);
 	}
+}
 
+
+void printFollowSet(FILE* f) {
+	printf("Follow Sets:\n");
+
+	for(int i=0; i<_NUM_NONTERMINALS; i++) {
+		fprintf(f, "%s ", getNonTerminalName(i));
+		for(int j=_NUM_TERMINALS-1; j>=0; j--) {
+			if(setIntersection(followSet[i], (unsigned long long int)1<< j) != 0LL) {
+				fprintf(f, "%s ", getTerminalName(j));
+			}
+		}
+		fputc('\n', f);
+	}
+	fputc('\n', f);
 }
 
 
 void computeFirstAndFollowSets() {
 	computeFirstSets();
 	computeFollowSets();
+}
+
+
+void createParseTable() {
+	for(int i = 0; i < _NUM_RULES; i++) {
+		nonterminal nt = g[i].NT;
+		int index = nt.ntid; // index into parse table
+		for(int j = 0; j < _NUM_TERMINALS; j++) {
+			if ((firstSet[index] & (unsigned long long int)1 << j) != 0) 
+				parseTable[index][j] = i;
+
+			else if ((followSet[index] & (unsigned long long int)1 << j) != 0)
+				parseTable[index][j] = _SYN;
+
+			else 
+				parseTable[index][j] = _ERROR;
+		}
+	}
+}
+
+
+void printParseTable(FILE* outfile) {
+
+	fprintf(outfile, "%23s", "");
+	for(int i=0; i<_NUM_TERMINALS; i++) {
+		fprintf(outfile, "%13s", getTerminalName(i));
+	}
+	fputc('\n', outfile);
+	for (int i = 0; i < _NUM_NONTERMINALS; i++) {
+		fprintf(outfile, "%23s", getNonTerminalName(i));
+		for(int j = 0; j < _NUM_TERMINALS; j++)
+			fprintf(outfile, "%13d", parseTable[i][j]);
+		fprintf(outfile, "\n");
+	}
 }
 
 
@@ -301,42 +365,11 @@ int main() {
 		printf("%s \n", tmp->S.NT.name);
 	*/	
 	// }
+
 	computeFirstAndFollowSets();
-	/*
-	for(int i=0; i<_NUM_NONTERMINALS; i++) {
-		if(setIntersection(firstSet[i], nullSet)) {
-			printf("%d Nullable\n", i);
-		}
-		else {
-			printf("%d Not nullable\n", i);
-		}
-	}
-	*/
-	printf("First Sets:\n");
-	
-	for(int i=0; i<_NUM_NONTERMINALS; i++) {
-		printf("%s ", getNonTerminalName(i));
-		for(int j=61; j>=0; j--) {
-			if(setIntersection(firstSet[i], (unsigned long long int)1<< j)) {
-				// if(strcmp(getTerminalName(j), "No Terminal") == 0)
-					// printf("NO TERMINAL: %d\n", j);
-				printf("%s ", getTerminalName(j));
-			}
-		}
-		putchar('\n');
-	}
-	putchar('\n');
-
-	printf("Follow Sets:\n");
-
-	for(int i=0; i<_NUM_NONTERMINALS; i++) {
-		printf("%s ", getNonTerminalName(i));
-		for(int j=61; j>=0; j--) {
-			if(setIntersection(followSet[i], (unsigned long long int)1<< j) != 0LL) {
-				printf("%s ", getTerminalName(j));
-			}
-		}
-		putchar('\n');
-	}
-	putchar('\n');
+	printFirstSet(stdout);
+	printFollowSet(stdout);
+	createParseTable();
+	FILE* f = fopen("parsetable.txt", "w");
+	printParseTable(f);
 }
