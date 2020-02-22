@@ -24,6 +24,10 @@ extern int tableSize;
 extern hashtable* t;
 
 
+void redColor();
+
+void resetColor();
+
 char* reverseMap(int tid);
 
 void removeComments(char *testcaseFile, char *cleanFile);

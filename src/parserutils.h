@@ -38,6 +38,7 @@ typedef struct {
 
 extern t_node* parseTree;
 
+rhsnode* createNode(symbol S, int TorNT);
 
 void push(stack* s, rhsnode* newNode);
 

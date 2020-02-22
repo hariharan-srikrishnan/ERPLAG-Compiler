@@ -373,12 +373,51 @@ void printParseTable(FILE* outfile) {
 	}
 }
 
-	
+
+// predictive parsing algorithm	
 void parseInputSourceCode(char* filename) {
 	FILE* f = fopen(filename, "r");
+	stack* s = (stack*) malloc(sizeof(stack));
+	s->top = NULL;
+	terminal T; 
+
+	// initialize stack
+	T.tid = ENDMARKER;
+	strcpy(T.name, "ENDMARKER");
+	symbol S;
+	S.T = T;
+	rhsnode* newNode = createNode(S, 0);
+	push(s, newNode);
 
 	while(1) {
+		token t = getNextToken();
+		if (t.tid == s->top->S.T.tid) {
+			if(t.tid == ENDMARKER) 
+				return;
 
+			pop(s, 1);
+		}
+
+		else {
+			int ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
+			if (ruleNo == _ERROR) {
+				redColor();
+				printf("Error: ");
+				resetColor();
+				printf("Syntax error at line %d\n", t.lineNo);
+			}
+
+			pop(s, 1);
+			rhsnode* tmp = g[ruleNo].head;
+
+			while(tmp->next != NULL)
+				tmp = tmp->next;
+
+			while(tmp != NULL) {
+				push(s, tmp);
+				tmp = tmp->prev;
+			}
+		}
 	}
 }
 
@@ -386,6 +425,7 @@ void parseInputSourceCode(char* filename) {
 int main() {
 	fp = fopen("../grammar.txt", "r");
 	readGrammar(fp);
+	fclose(fp);
 
 	/*
 	for(int i = 0; i < _NUM_RULES; i++) {
@@ -419,4 +459,10 @@ int main() {
 	createParseTable();
 	FILE* f = fopen("parsetable.txt", "w");
 	printParseTable(f);
+	// fclose(f);
+
+	fp = fopen("t2.txt", "r");
+	getStream(fp);
+
+	parseInputSourceCode("t2.txt");
 }
