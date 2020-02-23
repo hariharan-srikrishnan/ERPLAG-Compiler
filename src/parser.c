@@ -14,6 +14,8 @@
 
 FILE* fp;
 grammar g;
+t_node* parseTreeRoot;
+
 
 int parseTable[_NUM_NONTERMINALS][_NUM_TERMINALS];
 
@@ -389,6 +391,15 @@ void printParseTable(FILE* outfile) {
 }
 
 
+// initializing parse tree
+void initializeParseTree() {
+	parseTreeRoot = (t_node*) malloc(sizeof(t_node)); 
+	parseTreeRoot->TorNT = 1;
+	parseTreeRoot->data.NT.ntid = program;
+	strcpy(parseTreeRoot->data.NT.name, getNonTerminalName(program));
+}
+
+
 // predictive parsing algorithm	
 void parseInputSourceCode(char* filename) {
 	FILE* f = fopen(filename, "r");
@@ -408,6 +419,7 @@ void parseInputSourceCode(char* filename) {
 	strcpy(NT.name, getNonTerminalName(NT.ntid));
 	S.NT = NT;
 	newNode = createNode(S, 1);
+	newNode->treeptr = parseTreeRoot;
 	push(s, newNode);
 	/*
 	while(1) {
@@ -445,6 +457,8 @@ void parseInputSourceCode(char* filename) {
 
 	token t = getNextToken();
 	int syntaxError = 0;
+	t_node *parent, *catchReturnValue;
+	
 	while(1) {
 		// token t = getNextToken();
 		// if(t.tid == ENDMARKER)
@@ -452,6 +466,7 @@ void parseInputSourceCode(char* filename) {
 
 		fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
 		
+		// if top of stack is a token/terminal
 		if(s->top->TorNT == 0) {
 			if(t.tid == s->top->S.T.tid) {
 				if(t.tid == ENDMARKER) {
@@ -461,7 +476,7 @@ void parseInputSourceCode(char* filename) {
 
 				else {
 					fprintf(stdout, "Popped from top of stack: %s\n", getTerminalName(t.tid));
-					pop(s, 1);
+					catchReturnValue = pop(s, 1);
 					t = getNextToken();
 
 				}
@@ -475,11 +490,12 @@ void parseInputSourceCode(char* filename) {
 				printf("Syntax error at line %d\n", t.lineNo);
 				
 				// t = getNextToken();
-				pop(s, 1);
+				catchReturnValue = pop(s, 1);
 				syntaxError = 1;
 			}
 		}
 
+		// else, top of stack is a nonterminal
 		else {
 			int ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
 
@@ -496,7 +512,7 @@ void parseInputSourceCode(char* filename) {
 
 			// error recovery
 			else if (ruleNo == _SYN) 
-				pop(s, 1);
+				catchReturnValue = pop(s, 1);
 			
 			// if(ruleNo == _ERROR) {
 			// 	redColor();
@@ -520,11 +536,51 @@ void parseInputSourceCode(char* filename) {
 			// }
 
 			else {
+				t_node* children = NULL;
+				t_node* childitr = NULL;
+				t_node* childAddresses[15];
+				int pos = 0;
 				fprintf(stdout, "Popped from top of stack: %s\n", s->top->S.NT.name);
-				pop(s, 1);
+				parent = pop(s, 1);
 				rhsnode* temp = g[ruleNo].head;
-				while(temp->next)
+				while(temp) {
+					t_node* newNode = (t_node*) malloc(sizeof(t_node));
+					childAddresses[pos++] = newNode;
+					newNode->TorNT = temp->TorNT;
+					
+					// if symbol is a terminal
+					if(newNode->TorNT == 0) {
+						newNode->data.T = t;
+					}
+
+					// else, symbol is a nonterminal 
+					else {
+						newNode->data.NT = temp->S.NT;
+					}
+
+					// first element in rhs of rule
+					if(childitr == NULL) {
+						children = newNode;
+						childitr = newNode;
+					}
+
+					// one element already exists
+					else {
+						// setting sibling value
+						childitr->sibling = newNode;
+						childitr = newNode;
+					}
+
 					temp = temp->next;
+				}
+
+				// setting temp to point to last symbol in rule
+				temp = g[ruleNo].head;
+				while(temp->next) {
+					temp = temp->next;
+				}
+
+				parent->children = children;
 
 				while(temp) {
 					if(temp->TorNT == 0 && temp->S.T.tid == EPSILON) {
@@ -532,8 +588,11 @@ void parseInputSourceCode(char* filename) {
 						continue;
 					}
 
-					push(s, deepCopy(temp));
-					fprintf(stdout, "Pushed on to stack: %s\n", s->top->S.T.name);
+
+					stacknode* x = deepCopy(temp);
+					x->treeptr = childAddresses[--pos];
+					push(s, x);
+					fprintf(stdout, "Pushed on to stack: %s\n", (s->top->TorNT)?(s->top->S.NT.name):(s->top->S.T.name));
 					temp = temp->prev;
 				}
 
@@ -577,12 +636,13 @@ int main() {
 	computeFirstAndFollowSets();
 	printFirstSet(stdout);
 	printFollowSet(stdout);
+	initializeParseTree();
 	createParseTable();
 	FILE* f = fopen("parsetable.txt", "w");
 	printParseTable(f);
 	fclose(f);
 
-	char* testfile = "t2.txt";
+	char* testfile = "t6.txt";
 	fp = fopen(testfile, "r");
 	getStream(fp);
 

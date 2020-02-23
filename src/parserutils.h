@@ -4,31 +4,38 @@
 
 
 // parse tree data structures
-typedef union node tree_node;
+typedef union _treeData treeData;
 
-typedef struct {
-	nonterminal NT;
-	tree_node* child;
-} nlnode;
+// typedef struct {
+// 	token T;
+// 	t_node* child;
+// 	t_node* sibling;
+// } leafnode;
 
+// typedef struct {
+// 	nonterminal NT;
+// 	t_node* child;
+// 	t_node* sibling;
+// } nlnode;
 
-typedef struct {
+union _treeData {
 	token T;
-	tree_node* child;
-} leafnode;
-
-
-union node {
-	nlnode n;
-	leafnode l;
+	nonterminal NT;
 };
 
-
-typedef struct {
-	tree_node node; // store data
+typedef struct _tnode{
 	int TorNT; // tag (T:0, NT:1)
+	struct _tnode* sibling;
+	struct _tnode* children;
+	treeData data;
 } t_node;
 
+
+
+// union node {
+// 	nlnode n;
+// 	leafnode l;
+// };
 
 // stack
 typedef struct _stacknode {
@@ -50,7 +57,7 @@ stacknode* deepCopy(rhsnode* rhs);
 
 void push(stack* s, stacknode* newNode);
 
-void pop(stack* s, int n);
+t_node* pop(stack* s, int n);
 
 nonterminal getNonTerminal(char* str);
 

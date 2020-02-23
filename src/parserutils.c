@@ -40,17 +40,20 @@ void push(stack* s, stacknode* newNode) {
 
 
 // pop n items from stack
-void pop(stack* s, int n) {
+t_node* pop(stack* s, int n) {
+	t_node* treePointer;
 	for(int i = 0; i < n; i++) {
 		
 		// stack already empty
 		if (s->top == NULL) 
-			return;
+			return NULL;
 
 		stacknode* tmp = s->top;
 		s->top = tmp->next;
+		treePointer = tmp->treeptr;
 		free(tmp);
 	}
+	return treePointer;
 }
 
 
