@@ -3,12 +3,6 @@
 #include "parserDef.h"
 
 
-// stack - just don't use prev pointer
-typedef struct {
-	rhsnode* top;
-} stack;
-
-
 // parse tree data structures
 typedef union node tree_node;
 
@@ -36,13 +30,25 @@ typedef struct {
 } t_node;
 
 
-extern t_node* parseTree;
+// stack
+typedef struct _stacknode {
+	symbol S;
+	int TorNT; // 0: T, 1: NT
+	struct _stacknode* next;
+	t_node* treeptr;
+} stacknode;
 
-rhsnode* createNode(symbol S, int TorNT);
 
-rhsnode* deepCopy(rhsnode* rhs);
+typedef struct {
+	stacknode* top;
+} stack;
 
-void push(stack* s, rhsnode* newNode);
+
+stacknode* createNode(symbol S, int TorNT);
+
+stacknode* deepCopy(rhsnode* rhs);
+
+void push(stack* s, stacknode* newNode);
 
 void pop(stack* s, int n);
 

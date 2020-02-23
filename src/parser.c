@@ -401,7 +401,7 @@ void parseInputSourceCode(char* filename) {
 	strcpy(T.name, getTerminalName(T.tid));
 	symbol S;
 	S.T = T;
-	rhsnode* newNode = createNode(S, 0);
+	stacknode* newNode = createNode(S, 0);
 	push(s, newNode);
 	nonterminal NT;
 	NT.ntid = program;
@@ -582,7 +582,7 @@ int main() {
 	printParseTable(f);
 	fclose(f);
 
-	char* testfile = "test.txt";
+	char* testfile = "t2.txt";
 	fp = fopen(testfile, "r");
 	getStream(fp);
 

@@ -8,24 +8,25 @@ t_node* parseTree;
 
 
 // utility function to create new node for stack
-rhsnode* createNode(symbol S, int TorNT) {
-	rhsnode* newNode = (rhsnode*) malloc(sizeof(rhsnode));
+stacknode* createNode(symbol S, int TorNT) {
+	stacknode* newNode = (stacknode*) malloc(sizeof(stacknode));
 	newNode->S = S;
 	newNode->TorNT = TorNT;
 	newNode->next = NULL;
+	newNode->treeptr = NULL;
 	return newNode;
 }
 
 
 // deep copy
-rhsnode* deepCopy(rhsnode* rhs) {
-	rhsnode* newNode = createNode(rhs->S, rhs->TorNT);
+stacknode* deepCopy(rhsnode* rhs) {
+	stacknode* newNode = createNode(rhs->S, rhs->TorNT);
 	return newNode;
 }
 
 
 // push new node onto the stack
-void push(stack* s, rhsnode* newNode) {
+void push(stack* s, stacknode* newNode) {
 	if (s->top == NULL) 
 		s->top = newNode;
 
@@ -46,7 +47,7 @@ void pop(stack* s, int n) {
 		if (s->top == NULL) 
 			return;
 
-		rhsnode* tmp = s->top;
+		stacknode* tmp = s->top;
 		s->top = tmp->next;
 		free(tmp);
 	}
@@ -817,10 +818,10 @@ int main() {
 	s->top = NULL;
 	terminal T; 
 	T.tid = EPSILON;
-	strcpy(T.name, "EPSILON");
+	strcpy(T.name, "A");
 	symbol S;
 	S.T = T;
-	rhsnode* newNode = createNode(S, 0);
+	stacknode* newNode = createNode(S, 0);
 	push(s, newNode);
 	printf("%s\n", s->top->S.T.name);
 	newNode = createNode(S, 0);
