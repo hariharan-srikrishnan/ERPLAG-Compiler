@@ -26,11 +26,13 @@ extern hashtable* t;
 
 void redColor();
 
+void magentaColor();
+
 void resetColor();
 
 char* reverseMap(int tid);
 
-void removeComments(char *testcaseFile, char *cleanFile);
+void removeComments(char *testcaseFile, FILE *output);
 
 void getStream(FILE* fp);
 

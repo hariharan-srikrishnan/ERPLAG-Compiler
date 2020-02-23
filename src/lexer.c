@@ -127,16 +127,15 @@ void resetColor() {
 }
 
 
-void removeComments(char *testcaseFile, char *cleanFile) {
+void removeComments(char *testcaseFile, FILE *output) {
 	// ASSUMPTION : input source code file does not exceed _MAX_INPUT_FILE_SIZE characters
-	FILE *input, *output;
+	FILE *input;
 	input = fopen(testcaseFile, "r");
 	if(input == NULL) {
 		fprintf(stderr, "Unable to open input file.\n");
 		exit(0);
 	}
 	char buffer[_MAX_INPUT_FILE_SIZE];
-	output = fopen(cleanFile, "w");
 	int sz = fread(buffer, _MAX_INPUT_FILE_SIZE, 1, input);
 
 	// removing comments from buffer
