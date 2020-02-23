@@ -110,6 +110,7 @@ char* reverseMap(int tid) {
 			return str;
 		}
 	}
+	return "";
 }
 
 // functions to augment standard output color

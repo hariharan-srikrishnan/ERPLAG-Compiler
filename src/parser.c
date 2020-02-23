@@ -325,6 +325,8 @@ void createParseTable() {
 			if(temp->TorNT == 0) {
 				// symbol is a terminal
 				parseTable[lhs.ntid][temp->S.T.tid] = i;
+				if (temp->S.T.tid != EPSILON) 
+					nullable = 0;
 				break;
 			}
 
@@ -442,17 +444,18 @@ void parseInputSourceCode(char* filename) {
 	*/
 
 	token t = getNextToken();
+	int syntaxError = 0;
 	while(1) {
 		// token t = getNextToken();
 		// if(t.tid == ENDMARKER)
 		// 	return;
 
-		// fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
+		fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
 		
 		if(s->top->TorNT == 0) {
 			if(t.tid == s->top->S.T.tid) {
 				if(t.tid == ENDMARKER) {
-					printf("Input source code is syntactically correct.\n");
+					printf("Input source code is syntactically %scorrect.\n", (syntaxError)?("in"):(""));
 					return;
 				}
 
@@ -463,15 +466,58 @@ void parseInputSourceCode(char* filename) {
 
 				}
 			}
+
+			// panic mode recovery
+			else {
+				redColor();
+				printf("Error: ");
+				resetColor();
+				printf("Syntax error at line %d\n", t.lineNo);
+				
+				// t = getNextToken();
+				pop(s, 1);
+				syntaxError = 1;
+			}
 		}
 
 		else {
 			int ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
-			if(ruleNo == _ERROR) {
+
+			// panic mode - error detection
+			if (ruleNo == _ERROR) {
 				redColor();
-				fprintf(stdout, "Error in line %d\n", t.lineNo);
-				resetColor();
+			 	printf("Error: ");
+			 	resetColor();
+			 	printf("Syntax error at line %d\n", t.lineNo);
+
+			 	t = getNextToken();
+			 	syntaxError = 1;
 			}
+
+			// error recovery
+			else if (ruleNo == _SYN) 
+				pop(s, 1);
+			
+			// if(ruleNo == _ERROR) {
+			// 	redColor();
+			// 	printf("Error: ");
+			// 	resetColor();
+			// 	printf("Syntax error at line %d\n", t.lineNo);
+				
+			// 	t = getNextToken();
+			// 	if (t.tid == ENDMARKER) 
+			// 			return;
+			// 	ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
+
+			// 	while(ruleNo != _SYN) {
+			// 		t = getNextToken();
+			// 		if (t.tid == ENDMARKER) 
+			// 			return;
+			// 		ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
+			// 	}
+
+			// 	pop(s, 1);
+			// }
 
 			else {
 				fprintf(stdout, "Popped from top of stack: %s\n", s->top->S.NT.name);
@@ -534,10 +580,11 @@ int main() {
 	createParseTable();
 	FILE* f = fopen("parsetable.txt", "w");
 	printParseTable(f);
-	// fclose(f);
+	fclose(f);
 
-	fp = fopen("t2.txt", "r");
+	char* testfile = "test.txt";
+	fp = fopen(testfile, "r");
 	getStream(fp);
 
-	parseInputSourceCode("t2.txt");
+	parseInputSourceCode(testfile);
 }
