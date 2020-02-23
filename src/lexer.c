@@ -91,6 +91,7 @@ char *start, *current; // current points to the location we will read the next c
 char lexeme[25];
 int lineno = 1;
 int testIdentifierLength = 0;
+int idError = 0;
 FILE* fp;
 
 // create hash table	
@@ -259,10 +260,11 @@ void getLexeme() {
 
 	// Finally case
 	if(loc >= 20 && testIdentifierLength == 1) {
-		magentaColor();
-		printf("Warning: ");
-		resetColor();
-		printf("Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
+		idError = 1;
+		// magentaColor();
+		// printf("Warning: ");
+		// resetColor();
+		// printf("Length of identifier exceeds 20 character limit at line %d, truncating to 20 characters\n", lineno);
 	}
 	testIdentifierLength = 0;
 	start = current;
@@ -364,7 +366,7 @@ token getNextToken() {
 	while(1) {
 
 		// error handling
-		if(error > 0) {
+		if(error > 0 && error != 5) {
 			retract(1);
 		}
 
@@ -405,11 +407,20 @@ token getNextToken() {
 				printf("Expected another = at line number: %d", lineno);
 				break;
 
+			case 5: 
+				redColor();
+				printf("Error: ");
+				resetColor();
+				printf("Length of identifier exceeds 20 at line number: %d\n", lineno);
+				break;
+
 		}
 
 		if (error >= 0) {
-			getLexeme();
-			printf("\tEncountered lexeme: %s\n", lexeme);
+			if (error != 5) {
+				getLexeme();
+				printf("\tEncountered lexeme: %s\n", lexeme);
+			}
 			state = 0;
 			error = -1;
 		}
@@ -612,6 +623,11 @@ token getNextToken() {
 			case 13: retract(1);
 					 testIdentifierLength = 1;
 					 getLexeme();
+					 if (idError) {
+					 	error = 5;
+					 	idError = 0;
+						break;					 	
+					 }
 					 t.tid = isKeyword(lexeme);
 					 strcpy(t.lexeme, lexeme);
 					 t.lineNo = lineno;

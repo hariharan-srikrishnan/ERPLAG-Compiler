@@ -16,6 +16,7 @@ extern char *start, *current; // current points to the location we will read the
 extern char lexeme[];
 extern int lineno;
 extern int testIdentifierLength;
+extern int idError;
 
 extern FILE* fp;
 
