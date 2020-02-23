@@ -6,7 +6,7 @@ returns  [sum:real];
 start
 	declare index:integer;
 	declare t:boolean;
-	sum:=0.0;
+	sum:=12.34e+5;
 	for(index in  1..15)
 	start
 		t:= index<=n;

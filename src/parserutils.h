@@ -27,6 +27,7 @@ typedef struct _tnode{
 	int TorNT; // tag (T:0, NT:1)
 	struct _tnode* sibling;
 	struct _tnode* children;
+	struct _tnode* parent;
 	treeData data;
 } t_node;
 

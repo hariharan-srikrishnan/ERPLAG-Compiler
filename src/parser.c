@@ -397,6 +397,7 @@ void initializeParseTree() {
 	parseTreeRoot->TorNT = 1;
 	parseTreeRoot->data.NT.ntid = program;
 	strcpy(parseTreeRoot->data.NT.name, getNonTerminalName(program));
+	parseTreeRoot->parent = NULL;
 }
 
 
@@ -421,49 +422,12 @@ void parseInputSourceCode(char* filename) {
 	newNode = createNode(S, 1);
 	newNode->treeptr = parseTreeRoot;
 	push(s, newNode);
-	/*
-	while(1) {
-		token t = getNextToken();
-		if ( (s->top->TorNT == 0) && t.tid == s->top->S.T.tid) {
-			if(t.tid == ENDMARKER) 
-				return;
-
-			pop(s, 1);
-		}
-
-		else {
-			int ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
-			if (ruleNo == _ERROR) {
-				redColor();
-				printf("Error: ");
-				resetColor();
-				printf("Syntax error at line %d\n", t.lineNo);
-			}
-
-			pop(s, 1);
-			rhsnode* tmp = g[ruleNo].head;
-
-			while(tmp->next != NULL)
-				tmp = tmp->next;
-
-			while(tmp != NULL) {
-				newNode = deepCopy(tmp);
-				push(s, newNode);
-				tmp = tmp->prev;
-			}
-		}
-	}
-	*/
 
 	token t = getNextToken();
 	int syntaxError = 0;
 	t_node *parent, *catchReturnValue;
 	
 	while(1) {
-		// token t = getNextToken();
-		// if(t.tid == ENDMARKER)
-		// 	return;
-
 		fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
 		
 		// if top of stack is a token/terminal
@@ -513,27 +477,6 @@ void parseInputSourceCode(char* filename) {
 			// error recovery
 			else if (ruleNo == _SYN) 
 				catchReturnValue = pop(s, 1);
-			
-			// if(ruleNo == _ERROR) {
-			// 	redColor();
-			// 	printf("Error: ");
-			// 	resetColor();
-			// 	printf("Syntax error at line %d\n", t.lineNo);
-				
-			// 	t = getNextToken();
-			// 	if (t.tid == ENDMARKER) 
-			// 			return;
-			// 	ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
-
-			// 	while(ruleNo != _SYN) {
-			// 		t = getNextToken();
-			// 		if (t.tid == ENDMARKER) 
-			// 			return;
-			// 		ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
-			// 	}
-
-			// 	pop(s, 1);
-			// }
 
 			else {
 				t_node* children = NULL;
@@ -547,10 +490,21 @@ void parseInputSourceCode(char* filename) {
 					t_node* newNode = (t_node*) malloc(sizeof(t_node));
 					childAddresses[pos++] = newNode;
 					newNode->TorNT = temp->TorNT;
+					newNode->sibling = NULL;
+					newNode->parent = parent;
+					newNode->children = NULL;
 					
 					// if symbol is a terminal
 					if(newNode->TorNT == 0) {
-						newNode->data.T = t;
+						
+						if(temp->S.T.tid == EPSILON) {
+							newNode->data.T.tid = EPSILON;
+							newNode->data.T.lineNo = t.lineNo;
+							strcpy(newNode->data.T.lexeme, getTerminalName(EPSILON));
+						}
+
+						else
+							newNode->data.T = t;
 					}
 
 					// else, symbol is a nonterminal 
@@ -562,11 +516,13 @@ void parseInputSourceCode(char* filename) {
 					if(childitr == NULL) {
 						children = newNode;
 						childitr = newNode;
+						childitr->parent = parent;
 					}
 
 					// one element already exists
 					else {
 						// setting sibling value
+						childitr->parent = parent;
 						childitr->sibling = newNode;
 						childitr = newNode;
 					}
@@ -599,6 +555,71 @@ void parseInputSourceCode(char* filename) {
 			}
 		}
 	}
+}
+
+
+// Helper function for printParseTree()
+void printTreeNode(t_node* node, FILE* output) {
+
+	/* Need to print:
+		lexeme	lineNo	tokenName	valueIfNumber	parentNodeSymbol	isLeafNode	nodeSymbol
+	*/
+	
+	// Node is a token/terminal/leaf node
+	if(node->TorNT == 0) {
+		if(node->data.T.tid == NUM) 
+			fprintf(output, "%25s %8d %10s %15d %20s %12s %25s\n", node->data.T.lexeme, node->data.T.lineNo, getTerminalName(node->data.T.tid), atoi(node->data.T.lexeme), getNonTerminalName(node->parent->data.NT.ntid), "Y", "--------");
+		else if(node->data.T.tid == RNUM) 
+			fprintf(output, "%25s %8d %10s %15f %20s %12s %25s\n", node->data.T.lexeme, node->data.T.lineNo, getTerminalName(node->data.T.tid), atof(node->data.T.lexeme), getNonTerminalName(node->parent->data.NT.ntid), "Y", "--------");
+		else 
+			fprintf(output, "%25s %8d %10s %15s %20s %12s %25s\n", node->data.T.lexeme, node->data.T.lineNo, getTerminalName(node->data.T.tid), "--------", getNonTerminalName(node->parent->data.NT.ntid), "Y", "--------");
+	}
+
+	// Node is a nonterminal/non-leaf node
+	else {
+		if(node->parent != NULL)
+			fprintf(output, "%25s %8s %10s %15s %20s %12s %25s\n", "--------", "--------", "--------", "--------", getNonTerminalName(node->parent->data.NT.ntid), "N", getNonTerminalName(node->data.NT.ntid));
+		else
+			fprintf(output, "%25s %8s %10s %15s %20s %12s %25s\n", "--------", "--------", "--------", "--------", "ROOT", "N", getNonTerminalName(node->data.NT.ntid));
+	}
+
+}
+
+
+// Utility function for supporting recursive calls in printing parse tree
+void printParseTreeUtil(t_node* node, FILE* output) {
+	if(node == NULL)
+		return;
+
+	// print values of current node
+	printParseTreeUtil(node->children, output);
+	printTreeNode(node, output);
+	t_node* iter = node->children;
+	if(iter == NULL)
+		return;
+	iter = iter->sibling;
+	while(iter != NULL) {
+		printParseTreeUtil(iter, output);
+		iter = iter->sibling;
+	}
+
+}
+
+
+// Print inorder traversal of the parse tree
+void printParseTree(char* outfile) {
+	FILE* output;
+	output = fopen(outfile, "w");
+	if(output == NULL) {
+		fprintf(stderr, "Unable to open output file for printing parse tree!\n");
+		return;
+	}
+
+	// printing column names
+	fprintf(output, "%25s %8s %10s %15s %20s %12s %25s\n", "lexeme", "lineNo", "tokenName", "valueIfNumber", "parentNodeSymbol", "isLeafNode", "nodeSymbol");
+
+	printParseTreeUtil(parseTreeRoot, output);
+	fclose(output);
 }
 
 
@@ -642,9 +663,15 @@ int main() {
 	printParseTable(f);
 	fclose(f);
 
+
 	char* testfile = "t6.txt";
 	fp = fopen(testfile, "r");
 	getStream(fp);
 
 	parseInputSourceCode(testfile);
+	// FILE* parseTreeOutput = fopen("parseTree.txt", "w");
+	printParseTree("parseTree.txt");
+	// printTreeNode(parseTreeOutput, parseTreeRoot);
+	// printf("---------------%s--------------\n", parseTreeRoot->children->parent->data.NT.name);
+	// fclose(parseTreeOutput);
 }
