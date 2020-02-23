@@ -40,6 +40,8 @@ extern t_node* parseTree;
 
 rhsnode* createNode(symbol S, int TorNT);
 
+rhsnode* deepCopy(rhsnode* rhs);
+
 void push(stack* s, rhsnode* newNode);
 
 void pop(stack* s, int n);

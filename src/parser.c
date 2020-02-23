@@ -314,7 +314,7 @@ void createParseTable() {
 		}
 	}
 
-
+	// for each production A->W
 	for(int i=0; i<_NUM_RULES; i++) {
 		nonterminal lhs = g[i].NT;
 		rhsnode* temp = g[i].head;
@@ -328,16 +328,24 @@ void createParseTable() {
 				break;
 			}
 
+			/* 
+				for each terminal a in first(W), add the rule A->W to parseTable[A, a]
+			*/
 			for(int j = _NUM_TERMINALS-1; j >= 0; j--) {
 				if( (j != EPSILON) && setIntersection(firstSet[temp->S.NT.ntid], (unsigned long long int)1 << j)) {
 					parseTable[lhs.ntid][j] = i;
 				}
 			}
 
+			/* 
+				Let W = W_1 W_2 ... W_n
+				if EPSILON in first(W_i), proceed till W_i+1
+			*/
 			if(setIntersection(firstSet[temp->S.NT.ntid], nullSet)) {
 				temp = temp -> next;
 			}
 		
+			// if non-nullable W_i found, move to next rule
 			else {
 				nullable = 0;
 				break;
@@ -347,8 +355,13 @@ void createParseTable() {
 		if(!nullable)
 			continue;
 		
+		/* 
+			if EPSILON if in first(W):
+				for each terminal b in Follow(A), add A->W to parseTable[A, b]
+				if $ 
+		*/
 		for(int j = _NUM_TERMINALS-1; j >= 0; j--) {
-			if(setIntersection(followSet[temp->S.NT.ntid], (unsigned long long int)1 << j)) {
+			if(setIntersection(followSet[lhs.ntid], (unsigned long long int)1 << j)) {
 				parseTable[lhs.ntid][j] = i;
 			}
 		}
@@ -383,15 +396,21 @@ void parseInputSourceCode(char* filename) {
 
 	// initialize stack
 	T.tid = ENDMARKER;
-	strcpy(T.name, "ENDMARKER");
+	strcpy(T.name, getTerminalName(T.tid));
 	symbol S;
 	S.T = T;
 	rhsnode* newNode = createNode(S, 0);
 	push(s, newNode);
-
+	nonterminal NT;
+	NT.ntid = program;
+	strcpy(NT.name, getNonTerminalName(NT.ntid));
+	S.NT = NT;
+	newNode = createNode(S, 1);
+	push(s, newNode);
+	/*
 	while(1) {
 		token t = getNextToken();
-		if (t.tid == s->top->S.T.tid) {
+		if ( (s->top->TorNT == 0) && t.tid == s->top->S.T.tid) {
 			if(t.tid == ENDMARKER) 
 				return;
 
@@ -414,8 +433,64 @@ void parseInputSourceCode(char* filename) {
 				tmp = tmp->next;
 
 			while(tmp != NULL) {
-				push(s, tmp);
+				newNode = deepCopy(tmp);
+				push(s, newNode);
 				tmp = tmp->prev;
+			}
+		}
+	}
+	*/
+
+	token t = getNextToken();
+	while(1) {
+		// token t = getNextToken();
+		// if(t.tid == ENDMARKER)
+		// 	return;
+
+		// fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
+		
+		if(s->top->TorNT == 0) {
+			if(t.tid == s->top->S.T.tid) {
+				if(t.tid == ENDMARKER) {
+					printf("Input source code is syntactically correct.\n");
+					return;
+				}
+
+				else {
+					fprintf(stdout, "Popped from top of stack: %s\n", getTerminalName(t.tid));
+					pop(s, 1);
+					t = getNextToken();
+
+				}
+			}
+		}
+
+		else {
+			int ruleNo = parseTable[s->top->S.NT.ntid][t.tid];
+			if(ruleNo == _ERROR) {
+				redColor();
+				fprintf(stdout, "Error in line %d\n", t.lineNo);
+				resetColor();
+			}
+
+			else {
+				fprintf(stdout, "Popped from top of stack: %s\n", s->top->S.NT.name);
+				pop(s, 1);
+				rhsnode* temp = g[ruleNo].head;
+				while(temp->next)
+					temp = temp->next;
+
+				while(temp) {
+					if(temp->TorNT == 0 && temp->S.T.tid == EPSILON) {
+						temp = temp->prev;
+						continue;
+					}
+
+					push(s, deepCopy(temp));
+					fprintf(stdout, "Pushed on to stack: %s\n", s->top->S.T.name);
+					temp = temp->prev;
+				}
+
 			}
 		}
 	}

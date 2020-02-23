@@ -16,6 +16,14 @@ rhsnode* createNode(symbol S, int TorNT) {
 	return newNode;
 }
 
+
+// deep copy
+rhsnode* deepCopy(rhsnode* rhs) {
+	rhsnode* newNode = createNode(rhs->S, rhs->TorNT);
+	return newNode;
+}
+
+
 // push new node onto the stack
 void push(stack* s, rhsnode* newNode) {
 	if (s->top == NULL) 
