@@ -1,3 +1,11 @@
+/*
+Anirudh S Chakravarthy - 2017A7PS1195P
+Hariharan Srikrishnan  - 2017A7PS0134P
+Honnesh Rohmetra	   - 2016B2A70770P
+Praveen Ravirathinam   - 2017A7PS1174P
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,6 +111,8 @@ int main(int argc, char* argv[]) {
 					lineno = 1;
 					break;
 
+			default: printf("Please enter a valid choice\n");
+					 break;
 		}
 
 	} while (choice != 0);
