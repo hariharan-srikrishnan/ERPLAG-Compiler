@@ -23,6 +23,7 @@ Praveen Ravirathinam   - 2017A7PS1174P
 FILE* parserfp;
 grammar g;
 t_node* parseTreeRoot;
+int syntaxError = 0;
 
 
 int parseTable[_NUM_NONTERMINALS][_NUM_TERMINALS];
@@ -433,7 +434,7 @@ void parseInputSourceCode(char* filename) {
 	push(s, newNode);
 
 	token t = getNextToken();
-	int syntaxError = 0;
+	syntaxError = 0;
 	t_node *parent, *catchReturnValue;
 	
 	while(1) {

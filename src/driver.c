@@ -100,7 +100,8 @@ int main(int argc, char* argv[]) {
 					initializeParseTree();
 					createParseTable();
 					parseInputSourceCode(argv[1]);
-					printParseTree(argv[2]);
+					if (!syntaxError)
+						printParseTree(argv[2]);
 					end_time = clock();
 
 	                total_CPU_time  =  (double) (end_time - start_time);

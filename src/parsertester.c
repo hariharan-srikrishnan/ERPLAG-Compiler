@@ -41,6 +41,7 @@ int main(){
 
 	// parse the program and print the Parse Tree to a text file
 	parseInputSourceCode(testfile);
-	printParseTree("parseTree_test.txt");
+	if (!syntaxError)
+		printParseTree("parseTree_test.txt");
 
 }

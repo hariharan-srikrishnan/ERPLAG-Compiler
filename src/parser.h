@@ -17,6 +17,7 @@ Praveen Ravirathinam   - 2017A7PS1174P
 
 extern FILE* parserfp;
 extern grammar g;
+extern int syntaxError;
 
 extern int** parseTable;
 extern t_node* parseTreeRoot;
