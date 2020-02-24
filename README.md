@@ -58,9 +58,10 @@ This file contains the grammar of the compiler which we use to parse the program
 **Non Terminals** :	A,B,C <br/>
 **Terminals** :		d,e,f <br/>
 
-**Rules of given grammar**:	A --> dBef <br/>
-							B --> f|BCe <br/>
-							C --> dB <br/>
+**Rules of given grammar**:	<br/>
+A --> dBef <br/>
+B --> f|BCe <br/>
+C --> dB <br/>
 
 **Entry in text file is**: <br/>
 	A d B e f <br/>
