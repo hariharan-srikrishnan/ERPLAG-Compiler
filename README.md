@@ -1,14 +1,17 @@
 # ERPLAG-Compiler
-#### Group members:
+This repository consists of the various files needed to implement a compiler for the ERPLAG language. To execute the program one can use the make file which generates an executable which can accept command line arguments.
+
+
+### Group members:
 Anirudh S Chakravarthy	(2017A7PS1195P) <br/>
 Hariharan Srikrishnan	(2017A7PS0134P) <br/>
 Honnesh Rohmetra		(2016B2A70770P) <br/>
 Praveen Ravirathinam	(2017A7PS1174P) <br/>
 
-This repository consists of the various files needed to implement a compiler for the ERPLAG language. To execute the program one can use the make file which generates an executable which can accept command line arguments.<br/>
 Below are descriptions of the functionality of the files present in the repository.
 
-### Lexer.c
+
+### lexer.c
 This file contains functions that allows the user to, given an input source file, read the file as a stream of tokens in the language of the given grammar and its specifications. Apart from tokenising the file, appropriate error messages and the lines at which they occur are displayed wherever wrong tokens are encountered. 
 
 Token recognition and separation was done using a Deterministic Finite Automata (DFA). On reaching a final state retraction was performed using the retract(n) function, where n denotes number of characters to retract. The tokens before recognition were stored using an efficient twin buffer system and maintained three indices for tracking current token, namely buffer1, buffer2 and current. Token names were stored as enumerations and were recognized by the getLexeme() function, which used the buffer1, buffer2 and current indices to extract the correct token. Keywords were recognized by the isKeyword() function. Each recognized token is returned as a structure consisting of Token ID, line number and its lexeme, whose maximum length can be 20 characters.
@@ -43,7 +46,8 @@ This file consists of all the functions for the functionality of the parser.
 
 The grammar is read from a text file and stored in the grammar structure. Using this structure as input, First and Follow Sets for all non terminals can be automatically calculated using the computeFirstAndFollowSets() function. The parse tree can be initialized using the initializeParseTree() function. The Parse Table for the given grammar can then be created using the createParseTable() function. Now, one can write the Parse Table to a text file using printParseTable() function which takes a file pointer as input.
 
-To parse a program, one has to first use getStream() to read the file, like in lexer.c, then invoke the parseInputSourceCode() function to parse the file and generate the Parse tree for the given program. To write the Parse Tree to a file one must invoke the printParseTree() function passing the text file name as input. <br/>
+To parse a program, one has to first use getStream() to read the file, like in lexer.c, then invoke the parseInputSourceCode() function to parse the file and generate the Parse tree for the given program. To write the Parse Tree to a file one must invoke the printParseTree() function passing the text file name as input.
+
 A full flow of this can be seen in parsertester.c
 
 ### grammar.txt
@@ -51,15 +55,15 @@ This file contains the grammar of the compiler which we use to parse the program
 
 #### An example:
 
-**Non Terminals** :	A,B,C
-**Terminals** :		d,e,f
+**Non Terminals** :	A,B,C <br/>
+**Terminals** :		d,e,f <br/>
 
-**Rules of given grammar**:	A --> dBef
-							B --> f|BCe
-							C --> dB
+**Rules of given grammar**:	A --> dBef <br/>
+							B --> f|BCe <br/>
+							C --> dB <br/>
 
-**Entry in text file is**: 
-	A d B e f
-	B f
-	B B C e
-	C d B
+**Entry in text file is**: <br/>
+	A d B e f <br/>
+	B f <br/>
+	B B C e <br/>
+	C d B <br/>
