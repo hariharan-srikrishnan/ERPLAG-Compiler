@@ -3,6 +3,11 @@
 start
 	
 end
+<<module empty>>
+takes input[a:boolean];
+start
+
+end
 
 ** print the following message on the console
       " Input source code is syntactically correct.........."

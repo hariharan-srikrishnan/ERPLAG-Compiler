@@ -4,9 +4,6 @@
 #include "parserutils.h"
 
 
-t_node* parseTree;
-
-
 // utility function to create new node for stack
 stacknode* createNode(symbol S, int TorNT) {
 	stacknode* newNode = (stacknode*) malloc(sizeof(stacknode));

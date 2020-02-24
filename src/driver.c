@@ -21,12 +21,16 @@ int main(int argc, char* argv[]) {
 	printf("\t c. Parsing complete based on predictive parsing.\n");
 	printf("\t d. Parse tree generated.\n");
 	printf("\t e. Modules work with all testcases.\n");
+	printf("\t f. Error handling also performed.\n");
 
 
 	if (argc != 3) {
 		printf("Number of arguments don't match\n");
 		exit(0);
 	}
+
+	// need to read grammar only once
+	int grammarRead = 0;
 
 	do {
 		printf("Please enter your choice:\n");
@@ -48,11 +52,16 @@ int main(int argc, char* argv[]) {
 						printf("Line Number: %d  Lexeme: %s  Token Name: %s\n", tk.lineNo, tk.lexeme, getTerminalName(tk.tid));
 					}
 					fclose(fp);
+					lineno = 1;
 					break;
 
-			case 3: parserfp = fopen("../grammar.txt", "r");
-					readGrammar(parserfp);
-					fclose(parserfp);
+			case 3: if(!grammarRead) {
+						parserfp = fopen("../grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+					
 					computeFirstAndFollowSets();
 					initializeParseTree();
 					createParseTable();
@@ -62,19 +71,26 @@ int main(int argc, char* argv[]) {
 					parseInputSourceCode(argv[1]);
 					printParseTree(argv[2]);
 					fclose(fp);
+					lineno = 1;
 					break;
 
-			case 4: parserfp = fopen("../grammar.txt", "r");
+			case 4:	if(!grammarRead) {
+						parserfp = fopen("../grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+
 					fp = fopen(argv[1], "r");
 					clock_t start_time, end_time;
 	                double total_CPU_time, total_CPU_time_in_seconds;
 	                start_time = clock();
 
-					readGrammar(parserfp);
+	                // fprintf(stderr, "%p\n", g[0].head);
+					getStream(fp);
 					computeFirstAndFollowSets();
 					initializeParseTree();
 					createParseTable();
-					getStream(fp);
 					parseInputSourceCode(argv[1]);
 					printParseTree(argv[2]);
 					end_time = clock();
@@ -83,8 +99,8 @@ int main(int argc, char* argv[]) {
 	                total_CPU_time_in_seconds =   total_CPU_time / CLOCKS_PER_SEC;
 	                printf("Total CPU time: %lf, Total CPU time in sec: %lf\n", total_CPU_time, total_CPU_time_in_seconds);
 
-					fclose(parserfp);
 					fclose(fp);
+					lineno = 1;
 					break;
 
 		}

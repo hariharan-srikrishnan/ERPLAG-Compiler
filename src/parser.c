@@ -12,7 +12,7 @@
 #define _NUM_TERMINALS 62 // verify
 #define _NUM_NONTERMINALS 57 // verify
 
-FILE* fp;
+FILE* parserfp;
 grammar g;
 t_node* parseTreeRoot;
 
@@ -29,7 +29,7 @@ static inline unsigned long long int setUnion(unsigned long long int a, unsigned
 }
 
 
-static unsigned long long int setIntersection(unsigned long long int a, unsigned long long int b) {
+static inline unsigned long long int setIntersection(unsigned long long int a, unsigned long long int b) {
 	return a&b;
 }
 
@@ -73,6 +73,7 @@ void readGrammar(FILE* fp) {
 			tmp = tmp->next;
 		}
 
+		free(token);
 	}
 }
 
@@ -428,7 +429,7 @@ void parseInputSourceCode(char* filename) {
 	t_node *parent, *catchReturnValue;
 	
 	while(1) {
-		fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
+		// fprintf(stdout, "Next token: %s\n", getTerminalName(t.tid));
 		
 		// if top of stack is a token/terminal
 		if(s->top->TorNT == 0) {
@@ -439,8 +440,9 @@ void parseInputSourceCode(char* filename) {
 				}
 
 				else {
-					fprintf(stdout, "Popped from top of stack: %s\n", getTerminalName(t.tid));
+					// fprintf(stdout, "Popped from top of stack: %s\n", getTerminalName(t.tid));
 					catchReturnValue = pop(s, 1);
+					catchReturnValue->data.T = t;
 					t = getNextToken();
 
 				}
@@ -449,9 +451,9 @@ void parseInputSourceCode(char* filename) {
 			// panic mode recovery
 			else {
 				redColor();
-				printf("Error: ");
+				printf("Syntax Error: ");
 				resetColor();
-				printf("Syntax error at line %d\n", t.lineNo);
+			 	printf("Error at line %d. Encountered token: %s. Expected token: %s\n", t.lineNo, getTerminalName(t.tid), getTerminalName(s->top->S.T.tid));
 				
 				// t = getNextToken();
 				catchReturnValue = pop(s, 1);
@@ -466,9 +468,18 @@ void parseInputSourceCode(char* filename) {
 			// panic mode - error detection
 			if (ruleNo == _ERROR) {
 				redColor();
-			 	printf("Error: ");
+			 	printf("Syntax Error: ");
 			 	resetColor();
-			 	printf("Syntax error at line %d\n", t.lineNo);
+			 	printf("Error at line %d. Encountered token: %s. Expected tokens: ", t.lineNo, getTerminalName(t.tid));
+
+			 	for(int j=_NUM_TERMINALS-1; j>=0; j--) {
+			 		if(setIntersection((unsigned long long int)1 << j, firstSet[s->top->S.NT.ntid])) {
+			 			if((unsigned long long int)1 << j != nullSet) {
+			 				printf("%s ", getTerminalName(j));
+			 			}
+			 		}
+			 	}
+			 	putchar('\n');
 
 			 	t = getNextToken();
 			 	syntaxError = 1;
@@ -483,7 +494,7 @@ void parseInputSourceCode(char* filename) {
 				t_node* childitr = NULL;
 				t_node* childAddresses[15];
 				int pos = 0;
-				fprintf(stdout, "Popped from top of stack: %s\n", s->top->S.NT.name);
+				// fprintf(stdout, "Popped from top of stack: %s\n", s->top->S.NT.name);
 				parent = pop(s, 1);
 				rhsnode* temp = g[ruleNo].head;
 				while(temp) {
@@ -505,9 +516,8 @@ void parseInputSourceCode(char* filename) {
 
 						else {
 							newNode->data.T.tid = temp->S.T.tid;
-							strcpy(newNode->data.T.lexeme, temp->S.T.name);
 							newNode->data.T.lineNo = t.lineNo;
-							// newNode->data.T = t;
+							strcpy(newNode->data.T.lexeme, temp->S.T.name);
 						}
 					}
 
@@ -553,7 +563,7 @@ void parseInputSourceCode(char* filename) {
 					stacknode* x = deepCopy(temp);
 					x->treeptr = childAddresses[--pos];
 					push(s, x);
-					fprintf(stdout, "Pushed on to stack: %s\n", (s->top->TorNT)?(s->top->S.NT.name):(s->top->S.T.name));
+					// fprintf(stdout, "Pushed on to stack: %s\n", (s->top->TorNT)?(s->top->S.NT.name):(s->top->S.T.name));
 					temp = temp->prev;
 				}
 
@@ -636,56 +646,56 @@ void printParseTree(char* outfile) {
 }
 
 
-int main() {
-	fp = fopen("../grammar.txt", "r");
-	readGrammar(fp);
-	fclose(fp);
+// int main() {
+// 	parserfp = fopen("../grammar.txt", "r");
+// 	readGrammar(parserfp);
+// 	fclose(parserfp);
 
-	/*
-	for(int i = 0; i < _NUM_RULES; i++) {
-		printf("%s ", g[i].NT.name);
-		rhsnode* tmp = g[i].head;
-		while(tmp != nullable) {
-			if(tmp->TorNT)
-				printf("%s ", tmp->S.NT.name);
-			else
-				printf("%s ", tmp->S.T.name);
+// 	/*
+// 	for(int i = 0; i < _NUM_RULES; i++) {
+// 		printf("%s ", g[i].NT.name);
+// 		rhsnode* tmp = g[i].head;
+// 		while(tmp != nullable) {
+// 			if(tmp->TorNT)
+// 				printf("%s ", tmp->S.NT.name);
+// 			else
+// 				printf("%s ", tmp->S.T.name);
 
-			tmp = tmp->next;
-		}
-		putchar('\n');
+// 			tmp = tmp->next;
+// 		}
+// 		putchar('\n');
 	
-		while (tmp != g[i].head) {
-			if(tmp->TorNT)
-				printf("%s ", tmp->S.NT.name);
-			else
-				printf("%s ", tmp->S.T.name);
+// 		while (tmp != g[i].head) {
+// 			if(tmp->TorNT)
+// 				printf("%s ", tmp->S.NT.name);
+// 			else
+// 				printf("%s ", tmp->S.T.name);
 
-			tmp = tmp->prev;
-		}
-		printf("%s \n", tmp->S.NT.name);
-	*/	
-	// }
+// 			tmp = tmp->prev;
+// 		}
+// 		printf("%s \n", tmp->S.NT.name);
+// 	*/	
+// 	// }
 
-	computeFirstAndFollowSets();
-	printFirstSet(stdout);
-	printFollowSet(stdout);
-	initializeParseTree();
-	createParseTable();
-	FILE* f = fopen("parsetable.txt", "w");
-	printParseTable(f);
-	fclose(f);
+// 	computeFirstAndFollowSets();
+// 	printFirstSet(stdout);
+// 	printFollowSet(stdout);
+// 	initializeParseTree();
+// 	createParseTable();
+// 	FILE* f = fopen("parsetable.txt", "w");
+// 	printParseTable(f);
+// 	fclose(f);
 
 
-	char* testfile = "t3.txt";
-	fp = fopen(testfile, "r");
-	getStream(fp);
+// 	char* testfile = "t3.txt";
+// 	parserfp = fopen(testfile, "r");
+// 	getStream(parserfp);
 
-	parseInputSourceCode(testfile);
-	// FILE* parseTreeOutput = fopen("parseTree.txt", "w");
-	printParseTree("parseTree.txt");
-	// printTreeNode(parseTreeOutput, parseTreeRoot);
-	t_node* tmp =  parseTreeRoot->children->sibling->sibling->children->sibling->sibling->sibling->sibling->children->sibling->sibling;
-	printf("---------------%s--------------\n",getTerminalName(tmp->data.T.tid));
-	// fclose(parseTreeOutput);
-}
+// 	parseInputSourceCode(testfile);
+// 	// FILE* parseTreeOutput = fopen("parseTree.txt", "w");
+// 	printParseTree("parseTree.txt");
+// 	// printTreeNode(parseTreeOutput, parseTreeRoot);
+// 	t_node* tmp =  parseTreeRoot->children->sibling->sibling->children->sibling->sibling->sibling->sibling->children->sibling->sibling;
+// 	printf("---------------%s--------------\n",getTerminalName(tmp->data.T.tid));
+// 	// fclose(parseTreeOutput);
+// }

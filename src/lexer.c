@@ -5,7 +5,7 @@
 #include "lexerDef.h"
 #include "hash.h"
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 4096
 
 char* keywords[] = {
 	"integer",
@@ -374,42 +374,42 @@ token getNextToken() {
 
 			case 0:
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Invalid character at line number: %d", lineno);
 				break;
 
 			case 1:
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Expected a number at line number: %d", lineno);
 				break;
 
 			case 2:
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Expected number or + or - at line number: %d", lineno);
 				break;
 
 			case 3:
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Expected another . at line number: %d", lineno);
 				break;
 
 			case 4:
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Expected another = at line number: %d", lineno);
 				break;
 
 			case 5: 
 				redColor();
-				printf("Error: ");
+				printf("Lexical Error: ");
 				resetColor();
 				printf("Length of identifier exceeds 20 at line number: %d\n", lineno);
 				break;

@@ -6,18 +6,6 @@
 // parse tree data structures
 typedef union _treeData treeData;
 
-// typedef struct {
-// 	token T;
-// 	t_node* child;
-// 	t_node* sibling;
-// } leafnode;
-
-// typedef struct {
-// 	nonterminal NT;
-// 	t_node* child;
-// 	t_node* sibling;
-// } nlnode;
-
 union _treeData {
 	token T;
 	nonterminal NT;
@@ -31,12 +19,6 @@ typedef struct _tnode{
 	treeData data;
 } t_node;
 
-
-
-// union node {
-// 	nlnode n;
-// 	leafnode l;
-// };
 
 // stack
 typedef struct _stacknode {
