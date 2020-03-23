@@ -6,3 +6,4 @@
 **test.*
 !parsetable.txt
 **exe
+**.vscode
