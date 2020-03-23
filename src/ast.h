@@ -10,7 +10,7 @@ typedef struct _astnode {
     int TorNT; // terminal or non-terminal
     token datatype; // for type-check
     struct _astnode* parent;
-    struct _astnode* child;
+    struct _astnode* children;
     struct _astnode* sibling;
 } astnode;
 

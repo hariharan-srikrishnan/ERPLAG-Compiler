@@ -4,31 +4,46 @@
 #include "parserutils.h"
 #include "ast.h"
 
-
-astnode* ast_root;
+astnode *ast_root, *curr_node;
 
 
 // helper to create new AST node
 astnode* createASTNode(t_node* node) {
     astnode* newNode = (astnode*) malloc(sizeof(astnode));
+    newNode->TorNT = node->TorNT;
+    newNode->data = node->data;
     return newNode;
 }
 
 
+// initialization before AST creation
+void initializeAST() {
+    ast_root = createASTNode(parseTreeRoot);
+    curr_node = ast_root;
+    // memory and other similar variable initialization
+}
+
+
+// generate AST from parse tree
 void createAST(t_node* root) {
 
     // program -> moduleDeclarations otherModules driverModule otherModules 
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
-        createAST(root->children);
-        createAST(root->children->sibling);
-        createAST(root->children->sibling->sibling);
-        createAST(root->children->sibling->sibling->sibling);
+        t_node* md_ast = root->children;
+        t_node* om_ast = md_ast->sibling;
+        t_node* dm_ast = om_ast->sibling;
+
+        createAST(md_ast);
+        createAST(om_ast);
+        createAST(dm_ast);
+        createAST(dm_ast->sibling);
     }
 
     // moduleDeclarations -> moduleDeclaration moduleDeclarations
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclarations && root->children->TorNT == 1 && root->children->data.NT.ntid == moduleDeclaration) {
         createAST(root->children);
         createAST(root->children->sibling);
+
     }
 
     // moduleDeclarations -> EPSILON 
