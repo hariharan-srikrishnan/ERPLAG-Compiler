@@ -1,8 +1,6 @@
 #ifndef _AST
 #define _AST
-
 #include "parserutils.h"
-#include "parserDef.h"
 
 
 typedef struct _astnode {

@@ -22,13 +22,16 @@ void createAST(t_node* root) {
         t_node* md_ast = root->children;
         t_node* om_ast = md_ast->sibling;
         t_node* dm_ast = om_ast->sibling;
-
         createAST(md_ast);
         createAST(om_ast);
         createAST(dm_ast);
         createAST(dm_ast->sibling);
+
         root->ASTnode =  createASTNode(root);
         root->ASTnode->children = md_ast->ASTnode;
+        md_ast->ASTnode->sibling = om_ast->ASTnode;
+        om_ast->ASTnode->sibling = dm_ast->ASTnode;
+        dm_ast->ASTnode->sibling = dm_ast->sibling->ASTnode;
     }
 
     // moduleDeclarations -> moduleDeclaration moduleDeclarations
@@ -36,6 +39,7 @@ void createAST(t_node* root) {
         t_node* md_ast = root->children;
         createAST(md_ast);
         createAST(md_ast->sibling);
+
         md_ast->ASTnode->sibling = md_ast->sibling->ASTnode;
         root->ASTnode = md_ast->ASTnode; 
     }
@@ -380,7 +384,7 @@ void createAST(t_node* root) {
         t_node* id_ast = root->children;
         t_node* whichStmt_ast = id_ast->sibling;
         id_ast->ASTnode = createASTNode(id_ast);
-        whichStmt_ast->inh = id_ast;
+        whichStmt_ast->inh = id_ast->ASTnode;
         createAST(whichStmt_ast);
         
         root->ASTnode = whichStmt_ast->ASTnode;        
@@ -532,7 +536,7 @@ void createAST(t_node* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == new_NT && root->children->TorNT == 1 && root->children->data.NT.ntid == var_id_num) {
         t_node* varIdNum_ast = root->children;
         createAST(root->children);
-        root->ASTnode = varIdNum_ast->ASTnode
+        root->ASTnode = varIdNum_ast->ASTnode;
     }
 
     // unary_op -> PLUS
@@ -872,4 +876,9 @@ void createAST(t_node* root) {
         num_1->ASTnode->sibling = num_2->ASTnode;
         root->ASTnode = num_1->ASTnode;
     }
+}
+
+
+int main() {
+    createAST(parseTreeRoot);
 }

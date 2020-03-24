@@ -26,7 +26,7 @@ typedef struct _tnode{
 	struct _tnode* children;
 	struct _tnode* parent;
 	treeData data;
-	astnode *ASTnode, *inh; 
+	struct _astnode *ASTnode, *inh; 
 } t_node;
 
 
