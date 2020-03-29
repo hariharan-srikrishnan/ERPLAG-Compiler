@@ -2,6 +2,8 @@
 #define _AST
 #include "parserutils.h"
 
+union _treeData;
+typedef union _treeData treeData;
 
 typedef struct _astnode {
     treeData data; // current symbol

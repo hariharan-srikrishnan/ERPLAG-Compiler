@@ -9,11 +9,11 @@ Praveen Ravirathinam   - 2017A7PS1174P
 #ifndef _PU
 #define _PU
 #include "parserDef.h"
-#include "ast.h"
 
 
 // parse tree data structures
 typedef union _treeData treeData;
+struct _astnode;
 
 union _treeData {
 	token T;
@@ -26,7 +26,7 @@ typedef struct _tnode{
 	struct _tnode* children;
 	struct _tnode* parent;
 	treeData data;
-	struct _astnode *ASTnode, *inh; 
+	struct _astnode *syn, *inh; 
 } t_node;
 
 

@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 					break;
 
 			case 3: if(!grammarRead) {
-						parserfp = fopen("../grammar.txt", "r");
+						parserfp = fopen("grammar.txt", "r");
 						readGrammar(parserfp);
 						fclose(parserfp);
 						grammarRead = 1;
