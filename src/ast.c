@@ -941,10 +941,11 @@ void createAST(t_node* root) {
         t_node* num_1 = root->children;
         t_node* num_2 = num_1->sibling->sibling;
         
+        root->syn = createASTNode(root);
         num_1->syn = createASTNode(num_1);
         num_2->syn = createASTNode(num_2);
+        root->syn->children = num_1->syn;
         num_1->syn->sibling = num_2->syn;
-        root->syn = num_1->syn;
     }
 }
 
