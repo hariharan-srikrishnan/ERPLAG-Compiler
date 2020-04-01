@@ -206,28 +206,34 @@ void createAST(t_node* root) {
 
     // dataType -> INTEGER
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == INTEGER) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // dataType -> REAL
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == REAL) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // dataType -> BOOLEAN
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == BOOLEAN) {
         root->syn = createASTNode(root->children);
+        root->syn->children = createASTNode(root->children);
     }
     
     // dataType -> ARRAY SQBO range_arrays SQBC OF type
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == ARRAY) {
-        t_node* ra_ast = root->children->sibling->sibling;
+        t_node* arr_ast = root->children;
+        t_node* ra_ast = arr_ast->sibling->sibling;
         t_node* type_ast = ra_ast->sibling->sibling;
         createAST(ra_ast);
         createAST(type_ast);
 
-        root->syn = ra_ast->syn;
-        ra_ast->syn->sibling->sibling = type_ast->syn; // should be sibling to index_2
+        root->syn = createASTNode(root);
+        root->syn->children = arr_ast->syn;
+        arr_ast->syn->sibling = ra_ast->syn;
+        ra_ast->syn->sibling = type_ast->syn; 
     }
 
     // range_arrays -> index RANGEOP index
@@ -235,25 +241,29 @@ void createAST(t_node* root) {
         t_node* index_1 = root->children;
         t_node* index_2 = index_1->sibling->sibling;
         createAST(index_1);
-        createAST(index_2);   
+        createAST(index_2);  
 
+        root->syn = createASTNode(root);
+        root->syn->children = index_1->syn;
         index_1->syn->sibling = index_2->syn;
-        root->syn = index_1->syn;
     }
 
     // type -> INTEGER 
     else if (root->TorNT == 1 && root->data.NT.ntid == type && root->children->TorNT == 0 && root->children->data.T.tid == INTEGER) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // type -> REAL
     else if (root->TorNT == 1 && root->data.NT.ntid == type && root->children->TorNT == 0 && root->children->data.T.tid == REAL) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // type -> BOOLEAN
     else if (root->TorNT == 1 && root->data.NT.ntid == type && root->children->TorNT == 0 && root->children->data.T.tid == BOOLEAN) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // moduleDef -> START statements END 

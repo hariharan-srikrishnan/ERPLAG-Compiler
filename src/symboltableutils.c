@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "hash.h"
-#include "symboltableutils.h"
+#include "symboltableDef.h"
 #include "symboltable.h"
 
 

@@ -1,0 +1,100 @@
+#ifndef _STDEF
+#define _STDEF
+
+#include "lexerDef.h"
+
+
+// for INT, REAL
+typedef struct {
+    token datatype;
+    int width; // size of variable
+} primitiveType;
+
+
+// for arrays
+typedef struct {
+    token arr; // to store array keyword
+    primitiveType datatype; // array datatype
+    token lowerBound, upperBound; // bounds of array
+} arrayType;
+
+
+// type information
+typedef union { 
+    primitiveType primitive;
+    arrayType array;
+} typeinfo;
+
+
+// format for identifier symbol table entry
+typedef struct _symbolTableIdEntry {
+    char* name; // identifier name (for easier comparisons)
+    token id; // identifier information
+    typeinfo type; // type
+    int offset; 
+    int AorP; // 1: array, 0: primitive
+} symbolTableIdEntry;
+
+
+// node in hash table chain
+typedef struct _idNode {
+    symbolTableIdEntry entry;
+    struct _idNode* next;
+} idNode;
+
+
+// list of nodes for a given hash value
+typedef struct _idLinkedList {
+    idNode* head;
+    int length; // length of linked list
+} idLinkedList;
+
+
+// identifier symbol table
+typedef struct _idSymbolTable{
+    idLinkedList* list; // buckets of lists each corresponding to a particular hash
+    int hashSize; // number of hash values
+    struct _idSymbolTable *parent, *child, *sibling; // for nested scopes
+} idSymbolTable;
+
+
+// information for module parameter list
+typedef struct _parameters {
+    token datatype;
+    token id;
+    struct _parameters* next;
+} parameters;
+
+
+// format for function symbol table entry
+typedef struct _symbolTableFuncEntry {
+    char* name; // function name (for easier comparisons)
+    token id; // function identifier information   
+    parameters *inputParameters; // list of input parameters
+    parameters *outputParameters;  // list of output parameters
+    struct _idSymbolTable* link; // link to symbol table for that scope
+} symbolTableFuncEntry;
+
+
+// node in hash table chain
+typedef struct _funcNode {
+    symbolTableFuncEntry entry;
+    struct _funcNode* next;
+} funcNode;
+
+
+// list of nodes for a given hash value
+typedef struct _funcLinkedList {
+    funcNode* head;
+    int length; // length of linked list
+} funcLinkedList;
+
+
+// function symbol table
+typedef struct _funcSymbolTable {
+    funcLinkedList* list; // buckets of lists each corresponding to a particular hash
+    int hashSize; // number of hash values
+} funcSymbolTable;
+
+
+#endif

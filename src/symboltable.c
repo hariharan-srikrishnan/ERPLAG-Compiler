@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "symboltable.h"
+#include "symboltableDef.h"
 #include "symboltableutils.h"
 #include "hash.h"
 
@@ -28,8 +28,8 @@ idSymbolTable deleteIdSymbolTable(idSymbolTable table){
         deleteIdLinkedList(table.list[i]); 
     table.list = NULL;
     table.hashSize = 0;
-    table.sibling = NULL;
     table.child = NULL;
+    table.parent = NULL;
     return table;
 }
 

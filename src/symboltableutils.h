@@ -1,7 +1,7 @@
 #ifndef _STUTILS
 #define _STUTILS
 
-#include "symboltable.h"
+#include "symboltableDef.h"
 
 
 // for identifiers
