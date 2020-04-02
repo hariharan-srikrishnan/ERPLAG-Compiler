@@ -14,7 +14,7 @@ typedef struct _astnode {
     struct _astnode* parent;
     struct _astnode* children;
     struct _astnode* sibling;
-    idSymbolTable* scopeTable;
+    idSymbolTable scopeTable;
 } astnode;
 
 

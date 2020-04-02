@@ -9,6 +9,15 @@
 int semanticError = 0;
 
 
+/*
+    TO-DO:
+        1. Arithmetic expressions
+        2. Check parent scopes for variable
+        3. Change link from arrow to dot in function symbol table entries
+        4. Print relevant semantic errors
+        5. Arrays in arithmetic expressions
+*/
+
 // semantic rules and type checking
 void semanticChecker(astnode* root) {
 
@@ -30,10 +39,6 @@ void semanticChecker(astnode* root) {
         }
     }
 
-    else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclaration) {
-
-    }
-
     else if (root->TorNT == 1 && root->data.NT.ntid == otherModules) {
         astnode* tmp = root->children;
         while (tmp) {
@@ -43,13 +48,13 @@ void semanticChecker(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
-        currentIdTable = *(root->scopeTable);
+        currentIdTable = root->scopeTable;
         semanticChecker(root->children->sibling);
         currentIdTable = *(currentIdTable.parent);
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == module) {
-        currentIdTable = *(root->scopeTable);
+        currentIdTable = root->scopeTable;
         astnode* tmp = root->children;
         while (tmp->sibling)
             tmp = tmp->sibling;
@@ -187,7 +192,7 @@ void semanticChecker(astnode* root) {
 
     }
 
-    // TO DO:: checkc id list for optional also
+    // match thhe types and the number of parameters returned by a function must be the same as that of the parameters used in invoking the function.
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleReuseStmt) {
         astnode *functionName, *opt;
         if (root->children->TorNT == 1 && root->children->data.NT.ntid == optional) {
@@ -235,7 +240,46 @@ void semanticChecker(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == expression) {
+        astnode* tmp = root->children;
+
+        // unaryop -- (arithmeticExpr / var_id_num)
+        if (tmp->TorNT == 1 && tmp->data.NT.ntid == unary_op) {
+            if (root->children->sibling->TorNT == 0 && root->children->sibling->data.T.tid == ID) {
+                char* idName = root->children->sibling->data.T.lexeme;
+                symbolTableIdEntry* entry = searchId(currentIdTable, idName);
+                
+                if (entry == NULL) {
+                    semanticError = 1;
+                    return;
+                }
+
+                // TODO: HANDLE ARRAYS
+                root->datatype = entry->type.primitive.datatype;
+
+            }
+
+            else if (root->children->sibling->TorNT == 0 && root->children->sibling->data.T.tid == NUM) {
+                root->datatype.tid = INTEGER;
+                root->datatype.lineNo = root->children->sibling->data.T.lineNo; 
+            }
+
+            else if (root->children->sibling->TorNT == 0 && root->children->sibling->data.T.tid == RNUM) {
+                root->datatype.tid = REAL;
+                root->datatype.lineNo = root->children->sibling->data.T.lineNo; 
+            }
+
+            else {
+                semanticChecker(tmp->sibling);
+                // root->datatype = 
+            }
+
+        }
         
+        // arithhmetic or boolean expressions
+        else {
+            semanticChecker(tmp);
+            // root->datatype = 
+        }
     }
 
     else if(root->TorNT == 0 && (root->data.T.tid == MUL || root->data.T.tid == DIV || root->data.T.tid == PLUS || root->data.T.tid == MINUS)) {
@@ -280,11 +324,12 @@ void semanticChecker(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == conditionalStmt) {
-        currentIdTable = *(root->scopeTable);
+        currentIdTable = root->scopeTable;
         astnode* id = root->children;
         astnode* caseStatements = id->sibling;
         astnode* default_ast = caseStatements->sibling;
 
+        // case variable not found
         symbolTableIdEntry* entry = searchId(currentIdTable, id->data.T.lexeme);
         if (entry == NULL) {
             semanticError = 1;
@@ -312,8 +357,48 @@ void semanticChecker(astnode* root) {
         semanticChecker(caseStatements);
     }
 
-    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt) {
-        
+    else if (root->TorNT == 1 && root->data.NT.ntid == caseStmts) {
+        currentIdTable =root->scopeTable;
+        astnode* tmp = root->children;
+        while (tmp) {
+            tmp = tmp->sibling;
+            semanticChecker(tmp);
+            tmp = tmp->sibling;
+        }
+        currentIdTable = *(currentIdTable.parent);
     }
 
+    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == FOR) {
+        currentIdTable = root->scopeTable;
+        astnode* id = root->children->sibling;
+        symbolTableIdEntry* entry = searchId(currentIdTable, id->data.T.lexeme);
+
+        // identifier not found in symbol table
+        if (entry == NULL) {
+            semanticError = 1;
+        }
+
+        astnode* stmts = id->sibling->sibling;
+        semanticChecker(stmts);
+        currentIdTable = *(currentIdTable.parent);
+    }
+
+    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == WHILE) {
+        currentIdTable = root->scopeTable;
+            semanticError = 1;
+        }
+
+        astnode* stmts = id->sibling->sibling;
+        semanticChecker(stmts);
+        currentIdTable = *(currentIdTable.parent);
+    }
+
+    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == WHILE) {
+        currentIdTable = root->scopeTable;
+        astnode* abexpr = root->children->sibling;
+
+        astnode* stmts = abexpr->sibling;
+        semanticChecker(stmts);
+        currentIdTable = *(currentIdTable.parent);
+    }
 }

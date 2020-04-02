@@ -72,7 +72,9 @@ typedef struct _symbolTableFuncEntry {
     char name[25]; // function name (for easier comparisons)
     token id; // function identifier information   
     parameters *inputParameters; // list of input parameters
+    int numInputParams; // number of input parameters
     parameters *outputParameters;  // list of output parameters
+    int numOutputParams; // number of output parameters
     struct _idSymbolTable* link; // link to symbol table for that scope
 } symbolTableFuncEntry;
 

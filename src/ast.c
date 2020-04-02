@@ -580,7 +580,9 @@ void createAST(t_node* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == expression && root->children->TorNT == 1 && root->children->data.NT.ntid == U) {
         t_node* u_ast = root->children;
         createAST(u_ast);
-        root->syn = u_ast->syn;
+        
+        root->syn = createASTNode(root);
+        root->syn->children = u_ast->syn;
     }
 
     // U -> unary_op new_NT

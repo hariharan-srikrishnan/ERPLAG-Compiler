@@ -72,18 +72,20 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
 
 
 // create a new entry in function symbol table
-symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams, parameters* outputParams) {
+symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams, int numInput, parameters* outputParams, int numOutput) {
     symbolTableFuncEntry entry;
     strcpy(entry.name, functionName.lexeme);
     entry.id = functionName;
     entry.inputParameters = inputParams;
+    entry.numInputParams = numInput;
     entry.outputParameters = outputParams;
+    entry.numOutputParams = numOutput;
     entry.link = NULL; // NEED TO LINK THIS
     return entry;
 }
 
 
-// traverse AST fpr type extraction
+// traverse AST for type extraction
 void extractTypeAST(astnode* root) {
 
     if (root == NULL)
@@ -119,7 +121,7 @@ void extractTypeAST(astnode* root) {
     // moduleDeclaration -> DECLARE MODULE ID SEMICOL  
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclaration) {
         astnode* id = root->children;
-        symbolTableFuncEntry entry = createFuncEntry(id->data.T, NULL, NULL);
+        symbolTableFuncEntry entry = createFuncEntry(id->data.T, NULL, 0, NULL, 0);
         funcTable = insertFunc(funcTable, entry); 
     }
 
@@ -149,11 +151,11 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
-        root->scopeTable = &currentIdTable;
+        root->scopeTable = currentIdTable;
         
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
-        symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, NULL);
+        symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, 0, NULL, 0);
         entry.link = &currentIdTable;
         funcTable = insertFunc(funcTable, entry);
         
@@ -183,13 +185,14 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
-        root->scopeTable = &currentIdTable;
+        root->scopeTable = currentIdTable;
 
         // add input parameters to identifier table and function parameters to function table
         astnode* identifier = root->children;
         astnode* inputList = identifier->sibling;
         astnode* tmp = inputList->children;
         astnode* datatypenode;
+        int numInputParams = 1;
         parameters* inputParams = (parameters*) malloc(sizeof(parameters));
 
         inputParams->id = tmp->data.T;
@@ -211,6 +214,7 @@ void extractTypeAST(astnode* root) {
             prev->next = curr;
             prev = curr;
             tmp = tmp->sibling;
+            numInputParams++;
 
             idEntry = createIdEntry(inputParams->id, datatypenode);
             currentIdTable = insertId(currentIdTable, idEntry);
@@ -220,6 +224,7 @@ void extractTypeAST(astnode* root) {
         astnode* outputList = inputList->sibling; 
         astnode* moduleDefNode = outputList;
         parameters* outputParams;
+        int numOutputParams = 0;
         prev = NULL;
 
         if (outputList->TorNT == 1 && outputList->data.NT.ntid == output_plist) {
@@ -232,6 +237,7 @@ void extractTypeAST(astnode* root) {
             outputParams->datatype = typenode->data.T;
             tmp = tmp->sibling;
             prev = outputParams;
+            numOutputParams++;
 
             while (tmp) {
                 parameters* curr = (parameters*) malloc(sizeof(parameters));
@@ -241,6 +247,7 @@ void extractTypeAST(astnode* root) {
                 prev->next = curr;
                 prev = curr;
                 tmp = tmp->sibling;
+                numOutputParams++;
             }
         }
 
@@ -251,11 +258,13 @@ void extractTypeAST(astnode* root) {
             existingEntry->outputParameters = outputParams;
             existingEntry->id = identifier->data.T;
             existingEntry->link = &currentIdTable;
+            existingEntry->numInputParams = numInputParams;
+            existingEntry->numOutputParams = numOutputParams;
         }
 
         // module hasn't been declared before
         else if (existingEntry == NULL) {
-            symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, outputParams);
+            symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, numInputParams, outputParams, numOutputParams);
             funcEntry.link = &currentIdTable;
             funcTable = insertFunc(funcTable, funcEntry);
         }
@@ -303,7 +312,7 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
-        root->scopeTable = &currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling);
         extractTypeAST(root->children->sibling->sibling);
@@ -337,7 +346,7 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
-        root->scopeTable = &currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
@@ -360,7 +369,7 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
-        root->scopeTable = &currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);

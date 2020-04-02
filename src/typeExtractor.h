@@ -12,7 +12,7 @@ extern funcSymbolTable funcTable;
 symbolTableIdEntry createIdEntry(token id, astnode* type);
 
 // create an entry for function symbol table
-symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams, parameters* outputParams) {
+symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams, int numInput, parameters* outputParams, int numOutput);
 
 // traverse AST for type extraction
 void extractTypeAST(astnode* root);
