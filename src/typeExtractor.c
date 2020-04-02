@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ast.h"
 #include "symboltableDef.h"
 #include "symboltable.h"
-#include "ast.h"
+
+// for testing
+// #include "lexer.h"
+// #include "parser.h"
+// #include "parserutils.h"
 
 
 idSymbolTable currentIdTable, globalIdTable;
@@ -15,30 +20,37 @@ funcSymbolTable funcTable;
 symbolTableIdEntry createIdEntry(token id, astnode* type) {
     symbolTableIdEntry entry;
     entry.id = id;
-    entry.name = (char*) malloc(sizeof(id.lexeme));
     strcpy(entry.name, id.lexeme);
 
-    if (type->TorNT == 0 && type->children->data.T.tid == ARRAY) {
+    if (type->TorNT == 0 && type->data.T.tid == ARRAY) {
         entry.AorP = 1;
         entry.type.array.arr = type->data.T;
-        entry.type.array.lowerBound = type->children->sibling->children->data.T; // can also be a variable
-        entry.type.array.upperBound = type->children->sibling->children->sibling->data.T; // can also be a variable
-        entry.type.array.datatype.datatype = type->children->sibling->sibling->children->data.T;
+        entry.type.array.lowerBound = type->sibling->children->data.T; // can also be a variable
+        entry.type.array.upperBound = type->sibling->children->sibling->data.T; // can also be a variable
+        entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
 
         if (entry.type.array.datatype.datatype.tid == INTEGER)
             entry.type.array.datatype.width = 4;
-        else 
+
+        else if (entry.type.array.datatype.datatype.tid == REAL)
             entry.type.array.datatype.width = 8;
+        
+        else 
+            entry.type.array.datatype.width = 1;
     }  
 
     else {
         entry.AorP = 0;
-        entry.type.primitive.datatype = type->children->data.T;
+        entry.type.primitive.datatype = type->data.T;
 
         if (entry.type.primitive.datatype.tid == INTEGER)
             entry.type.primitive.width = 4;
-        else 
+        
+        else if (entry.type.primitive.datatype.tid == REAL)
             entry.type.primitive.width = 8;
+        
+        else 
+            entry.type.primitive.width = 1;
     }
     return entry;
 }
@@ -47,7 +59,6 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
 // create a new entry in function symbol table
 symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams, parameters* outputParams) {
     symbolTableFuncEntry entry;
-    entry.name = (char*) malloc(sizeof(functionName.lexeme));
     strcpy(entry.name, functionName.lexeme);
     entry.id = functionName;
     entry.inputParameters = inputParams;
@@ -58,7 +69,10 @@ symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams
 
 
 // traverse AST fpr type extraction
-void traverseAST(astnode* root) {
+void extractTypeAST(astnode* root) {
+
+    if (root == NULL)
+        return;
 
     // program -> moduleDeclarations otherModules driverModule otherModules 
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
@@ -66,17 +80,23 @@ void traverseAST(astnode* root) {
         globalIdTable = currentIdTable;
         funcTable = createFuncSymbolTable();
 
-        traverseAST(root->children);
-        traverseAST(root->children->sibling);
-        traverseAST(root->children->sibling->sibling);
-        traverseAST(root->children->sibling->sibling->sibling);
+        astnode* tmp = root->children;
+        while (tmp) {
+            extractTypeAST(tmp);
+            tmp = tmp->sibling;
+        }
+
+        // extractTypeAST(root->children);
+        // extractTypeAST(root->children->sibling);
+        // extractTypeAST(root->children->sibling->sibling);
+        // extractTypeAST(root->children->sibling->sibling->sibling);
     }
 
     // moduleDeclarations -> moduleDeclaration moduleDeclarations
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclarations) {
         astnode* tmp = root->children;
         while (tmp) {
-            traverseAST(tmp);
+            extractTypeAST(tmp);
             tmp = tmp->sibling;
         }
     }
@@ -84,17 +104,15 @@ void traverseAST(astnode* root) {
     // moduleDeclaration -> DECLARE MODULE ID SEMICOL  
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclaration) {
         astnode* id = root->children;
-        char* moduleName = id->data.T.lexeme;
-        symbolTableFuncEntry* entry = (symbolTableFuncEntry*) malloc(sizeof(symbolTableFuncEntry));
-        strcpy(entry->name, moduleName);
-        funcTable = insertFunc(funcTable, *entry); 
+        symbolTableFuncEntry entry = createFuncEntry(id->data.T, NULL, NULL);
+        funcTable = insertFunc(funcTable, entry); 
     }
 
     // otherModules -> module otherModules
     else if (root->TorNT == 1 && root->data.NT.ntid == otherModules) {
         astnode* tmp = root->children;
         while (tmp) {
-            traverseAST(tmp);
+            extractTypeAST(tmp);
             tmp = tmp->sibling;
         }
     }
@@ -105,12 +123,12 @@ void traverseAST(astnode* root) {
         astnode* moduleDefNode = drivernode->sibling;
         symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, NULL);
         funcTable = insertFunc(funcTable, entry);
-        traverseAST(moduleDefNode);
+        extractTypeAST(moduleDefNode);
     }
 
     // moduleDef -> START statements END
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDef) {
-        traverseAST(root->children);
+        extractTypeAST(root->children);
     }
 
     // module -> DEF MODULE ID ENDDEF TAKES INPUT SQBO input_plist SQBC SEMICOL ret moduleDef
@@ -124,10 +142,8 @@ void traverseAST(astnode* root) {
         
         else {
             idSymbolTable* tmp = currentIdTable.child;
-            while (tmp) {
-                if (tmp->sibling != NULL)
-                    tmp = tmp->sibling;
-            }
+            while (tmp->sibling) 
+                tmp = tmp->sibling;
             tmp->sibling = &newIdTable;
         }
         
@@ -192,9 +208,23 @@ void traverseAST(astnode* root) {
             }
         }
 
-        symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, outputParams);
-        funcTable = insertFunc(funcTable, funcEntry);
-        traverseAST(moduleDefNode);
+        // if module has already been declared before
+        symbolTableFuncEntry* existingEntry = searchFunc(funcTable, identifier->data.T.lexeme);
+        if (existingEntry != NULL && existingEntry->inputParameters == NULL && existingEntry->outputParameters == NULL) {
+            existingEntry->inputParameters = inputParams;
+            existingEntry->outputParameters = outputParams;
+            existingEntry->id = identifier->data.T;
+            existingEntry->link = &currentIdTable;
+        }
+
+        // module hasn't been declared before
+        else if (existingEntry == NULL) {
+            symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, outputParams);
+            funcEntry.link = &currentIdTable;
+            funcTable = insertFunc(funcTable, funcEntry);
+        }
+
+        extractTypeAST(moduleDefNode);
         currentIdTable = *(currentIdTable.parent);
     }
 
@@ -202,7 +232,7 @@ void traverseAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == statements) {
         astnode* tmp  = root->children;
         while (tmp) {
-            traverseAST(tmp);
+            extractTypeAST(tmp);
             tmp = tmp->sibling;
         }
     }
@@ -210,7 +240,7 @@ void traverseAST(astnode* root) {
     // declareStmt -> DECLARE idList COLON dataType SEMICOL
     else if (root->TorNT == 1 && root->data.NT.ntid == declareStmt) {
         astnode* ids = root->children;
-        astnode* datatypenode = ids->sibling;
+        astnode* datatypenode = ids->sibling->children;
         astnode* tmp = ids->children;
 
         while (tmp) {
@@ -231,17 +261,15 @@ void traverseAST(astnode* root) {
         
         else {
             idSymbolTable* tmp = currentIdTable.child;
-            while (tmp) {
-                if (tmp->sibling != NULL)
-                    tmp = tmp->sibling;
-            }
+            while (tmp->sibling) 
+                tmp = tmp->sibling;
             tmp->sibling = &newIdTable;
         }
         
         currentIdTable = newIdTable;
 
-        traverseAST(root->children->sibling);
-        traverseAST(root->children->sibling->sibling);
+        extractTypeAST(root->children->sibling);
+        extractTypeAST(root->children->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
     }
 
@@ -250,7 +278,7 @@ void traverseAST(astnode* root) {
         astnode* tmp = root->children;
         while(tmp) {
             tmp = tmp->sibling;
-            traverseAST(tmp);
+            extractTypeAST(tmp);
             tmp = tmp->sibling;
         }
     }
@@ -266,15 +294,13 @@ void traverseAST(astnode* root) {
         
         else {
             idSymbolTable* tmp = currentIdTable.child;
-            while (tmp) {
-                if (tmp->sibling != NULL)
-                    tmp = tmp->sibling;
-            }
+            while (tmp->sibling) 
+                tmp = tmp->sibling;
             tmp->sibling = &newIdTable;
         }
         
         currentIdTable = newIdTable;
-        traverseAST(root->children->sibling->sibling->sibling);
+        extractTypeAST(root->children->sibling->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
     }
 
@@ -289,15 +315,36 @@ void traverseAST(astnode* root) {
         
         else {
             idSymbolTable* tmp = currentIdTable.child;
-            while (tmp) {
-                if (tmp->sibling != NULL)
-                    tmp = tmp->sibling;
-            }
+            while (tmp->sibling) 
+                tmp = tmp->sibling;
             tmp->sibling = &newIdTable;
         }
         
         currentIdTable = newIdTable;
-        traverseAST(root->children->sibling->sibling);
+        extractTypeAST(root->children->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
     }
 }
+
+
+// int main (int argc, char* argv[]) {
+//     parserfp = fopen("grammar.txt", "r");
+//     readGrammar(parserfp);
+//     fclose(parserfp);
+
+//     computeFirstAndFollowSets();
+//     initializeParseTree();
+//     createParseTable();
+
+//     fp = fopen(argv[1], "r");
+//     if (fp == NULL)
+//         printf("NULL");
+//     getStream(fp);
+//     parseInputSourceCode(argv[1]);
+//     printParseTree(argv[2]);
+//     fclose(fp);
+
+//     createAST(parseTreeRoot);
+//     printAST(parseTreeRoot->syn);
+//     extractTypeAST(parseTreeRoot->syn);
+// }

@@ -28,7 +28,7 @@ typedef union {
 
 // format for identifier symbol table entry
 typedef struct _symbolTableIdEntry {
-    char* name; // identifier name (for easier comparisons)
+    char name[25]; // identifier name (for easier comparisons)
     token id; // identifier information
     typeinfo type; // type
     int offset; 
@@ -68,7 +68,7 @@ typedef struct _parameters {
 
 // format for function symbol table entry
 typedef struct _symbolTableFuncEntry {
-    char* name; // function name (for easier comparisons)
+    char name[25]; // function name (for easier comparisons)
     token id; // function identifier information   
     parameters *inputParameters; // list of input parameters
     parameters *outputParameters;  // list of output parameters

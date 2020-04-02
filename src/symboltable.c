@@ -18,6 +18,9 @@ idSymbolTable createIdSymbolTable() {
     table.list = (idLinkedList*) malloc(sizeof(idLinkedList) * hashTableSize);
     for (int i = 0; i < table.hashSize; i++) 
         table.list[i] = createIdLinkedList();
+    table.child = NULL;
+    table.parent = NULL;
+    table.sibling = NULL;
     return table;
 }
 

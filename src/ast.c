@@ -218,7 +218,7 @@ void createAST(t_node* root) {
 
     // dataType -> BOOLEAN
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == BOOLEAN) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
         root->syn->children = createASTNode(root->children);
     }
     
@@ -982,23 +982,23 @@ void printAST(astnode* root) {
 }
 
 
-int main(int argc, char* argv[]) {
-    parserfp = fopen("grammar.txt", "r");
-    readGrammar(parserfp);
-    fclose(parserfp);
+// int main(int argc, char* argv[]) {
+//     parserfp = fopen("grammar.txt", "r");
+//     readGrammar(parserfp);
+//     fclose(parserfp);
 
-    computeFirstAndFollowSets();
-    initializeParseTree();
-    createParseTable();
+//     computeFirstAndFollowSets();
+//     initializeParseTree();
+//     createParseTable();
 
-    fp = fopen(argv[1], "r");
-    if (fp == NULL)
-        printf("NULL");
-    getStream(fp);
-    parseInputSourceCode(argv[1]);
-    printParseTree(argv[2]);
-    fclose(fp);
+//     fp = fopen(argv[1], "r");
+//     if (fp == NULL)
+//         printf("NULL");
+//     getStream(fp);
+//     parseInputSourceCode(argv[1]);
+//     printParseTree(argv[2]);
+//     fclose(fp);
 
-    createAST(parseTreeRoot);
-    printAST(parseTreeRoot->syn);
-}
+//     createAST(parseTreeRoot);
+//     printAST(parseTreeRoot->syn);
+// }

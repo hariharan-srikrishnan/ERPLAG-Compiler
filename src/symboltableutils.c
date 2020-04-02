@@ -45,11 +45,10 @@ idLinkedList insertIdList(idLinkedList list, symbolTableIdEntry entry) {
     }
 
     idNode* tmp = list.head;
-    while(tmp != NULL) {
+    while(tmp->next != NULL) {
         if(strcmp(tmp->entry.name, entry.name) == 0)
             return list;
-        if(tmp->next)
-            tmp = tmp->next;
+        tmp = tmp->next;
     }
 
     idNode* newNode = (idNode*) malloc(sizeof(idNode));
@@ -112,12 +111,10 @@ funcLinkedList insertFuncList(funcLinkedList list, symbolTableFuncEntry entry) {
     }
 
     funcNode* tmp = list.head;
-    while(tmp != NULL) {
+    while(tmp->next != NULL) {
         if(strcmp(tmp->entry.name, entry.name) == 0) 
             return list;
-
-        if (tmp->next)
-            tmp = tmp->next;
+        tmp = tmp->next;
     }
 
     funcNode* newNode = (funcNode*) malloc(sizeof(funcNode));
