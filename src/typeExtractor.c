@@ -25,10 +25,25 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
     if (type->TorNT == 0 && type->data.T.tid == ARRAY) {
         entry.AorP = 1;
         entry.type.array.arr = type->data.T;
-        entry.type.array.lowerBound = type->sibling->children->data.T; // can also be a variable
-        entry.type.array.upperBound = type->sibling->children->sibling->data.T; // can also be a variable
-        entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
+        entry.type.array.dynamicArray = 0;
 
+        // dynamic lower bound
+        if (type->sibling->children->data.T.tid == ID) 
+            entry.type.array.dynamicArray = 1;
+
+        // static lower bound
+        else 
+            entry.type.array.lowerBound = atoi(type->sibling->children->data.T.lexeme);
+
+        // dynamic upper bound 
+        if (type->sibling->children->sibling->data.T.tid == ID)
+            entry.type.array.dynamicArray = 1;
+
+        // static upper bound
+        else
+            entry.type.array.upperBound = atoi(type->sibling->children->sibling->data.T.lexeme); 
+
+        entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
         if (entry.type.array.datatype.datatype.tid == INTEGER)
             entry.type.array.datatype.width = 4;
 
@@ -119,11 +134,31 @@ void extractTypeAST(astnode* root) {
 
     // driverModule -> DRIVERDEF DRIVER PROGRAM DRIVERENDDEF moduleDef
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
+        
+        // create a new symbol table
+        idSymbolTable newIdTable = createIdSymbolTable();
+        newIdTable.parent = &currentIdTable;
+        if (currentIdTable.child == NULL) 
+            currentIdTable.child = &newIdTable;
+        
+        else {
+            idSymbolTable* tmp = currentIdTable.child;
+            while (tmp->sibling) 
+                tmp = tmp->sibling;
+            tmp->sibling = &newIdTable;
+        }
+        
+        currentIdTable = newIdTable;
+        root->scopeTable = &currentIdTable;
+        
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
         symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, NULL);
+        entry.link = &currentIdTable;
         funcTable = insertFunc(funcTable, entry);
+        
         extractTypeAST(moduleDefNode);
+        currentIdTable = *(currentIdTable.parent);
     }
 
     // moduleDef -> START statements END
@@ -148,6 +183,7 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
+        root->scopeTable = &currentIdTable;
 
         // add input parameters to identifier table and function parameters to function table
         astnode* identifier = root->children;
@@ -267,6 +303,7 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
+        root->scopeTable = &currentIdTable;
 
         extractTypeAST(root->children->sibling);
         extractTypeAST(root->children->sibling->sibling);
@@ -300,6 +337,8 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
+        root->scopeTable = &currentIdTable;
+
         extractTypeAST(root->children->sibling->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
     }
@@ -321,6 +360,8 @@ void extractTypeAST(astnode* root) {
         }
         
         currentIdTable = newIdTable;
+        root->scopeTable = &currentIdTable;
+
         extractTypeAST(root->children->sibling->sibling);
         currentIdTable = *(currentIdTable.parent);
     }

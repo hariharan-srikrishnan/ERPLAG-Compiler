@@ -15,7 +15,8 @@ typedef struct {
 typedef struct {
     token arr; // to store array keyword
     primitiveType datatype; // array datatype
-    token lowerBound, upperBound; // bounds of array
+    int lowerBound, upperBound; // bounds of array
+    int dynamicArray; // whether bounds are known at compile-time
 } arrayType;
 
 
