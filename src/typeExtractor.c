@@ -290,6 +290,7 @@ void extractTypeAST(astnode* root) {
 
         while (tmp) {
             symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
+            ids->datatype = datatypenode->data.T;
             currentIdTable = insertId(currentIdTable, newEntry);
             tmp = tmp->sibling;
         }

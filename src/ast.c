@@ -380,11 +380,13 @@ void createAST(t_node* root) {
     // var_id_num -> NUM
     else if (root->TorNT == 1 && root->data.NT.ntid == var_id_num && root->children->TorNT == 0 && root->children->data.T.tid == NUM) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = INTEGER;
     }
 
     // var_id_num -> RNUM
     else if (root->TorNT == 1 && root->data.NT.ntid == var_id_num && root->children->TorNT == 0 && root->children->data.T.tid == RNUM) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = REAL;
     }
 
     // var -> var_id_num
@@ -493,6 +495,7 @@ void createAST(t_node* root) {
     // index -> NUM 
     else if (root->TorNT == 1 && root->data.NT.ntid == _index && root->children->TorNT == 0 && root->children->data.T.tid == NUM) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = INTEGER;
     }
     
     // index -> ID 
@@ -889,16 +892,19 @@ void createAST(t_node* root) {
     // value -> NUM 
     else if (root->TorNT == 1 && root->data.NT.ntid == value && root->children->TorNT == 0 && root->children->data.T.tid == NUM) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = INTEGER;
     }
     
     // value -> TRUE 
     else if (root->TorNT == 1 && root->data.NT.ntid == value && root->children->TorNT == 0 && root->children->data.T.tid == TRUE) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = BOOLEAN;
     }
 
     // value -> FALSE 
     else if (root->TorNT == 1 && root->data.NT.ntid == value && root->children->TorNT == 0 && root->children->data.T.tid == FALSE) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = BOOLEAN;
     }
 
     // default -> DEFAULT COLON statements BREAK SEMICOL
@@ -958,6 +964,10 @@ void createAST(t_node* root) {
         num_2->syn = createASTNode(num_2);
         root->syn->children = num_1->syn;
         num_1->syn->sibling = num_2->syn;
+
+        // not really needed here - but just for consistency
+        num_1->syn->datatype.tid = INTEGER;
+        num_2->syn->datatype.tid = INTEGER;
     }
 }
 
