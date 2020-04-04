@@ -11,6 +11,10 @@ astnode* createASTNode(t_node* node) {
     astnode* newNode = (astnode*) malloc(sizeof(astnode));
     newNode->TorNT = node->TorNT;
     newNode->data = node->data;
+    newNode->children = NULL;
+    newNode->sibling = NULL;
+    newNode->loopVariable = 0;
+    newNode->isUpdated = 0;
     return newNode;
 }
 
@@ -446,7 +450,10 @@ void createAST(t_node* root) {
         createAST(whichStmt_ast);
         
         root->syn = createASTNode(root);
-        root->syn->children = whichStmt_ast->syn;        
+        root->syn->children = whichStmt_ast->syn;    
+
+        // id has been updated - will be used for semantic rule check
+        id_ast->syn->isUpdated = 1;    
     }
     
     // whichStmt -> lvalueIDStmt
@@ -937,6 +944,9 @@ void createAST(t_node* root) {
         for_ast->syn->sibling = id_ast->syn;
         id_ast->syn->sibling = range_ast->syn;
         range_ast->syn->sibling = stmts_ast->syn;
+        
+        // ID is the loop variable
+        id_ast->syn->loopVariable = 1;
     }
     
     // iterativeStmt -> WHILE BO arithmeticOrBooleanExpr BC START statements END

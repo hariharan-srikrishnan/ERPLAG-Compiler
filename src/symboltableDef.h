@@ -15,7 +15,7 @@ typedef struct {
 typedef struct {
     token arr; // to store array keyword
     primitiveType datatype; // array datatype
-    int lowerBound, upperBound; // bounds of array
+    token lowerBound, upperBound; // bounds of array
     int dynamicArray; // whether bounds are known at compile-time
 } arrayType;
 
@@ -75,7 +75,8 @@ typedef struct _symbolTableFuncEntry {
     int numInputParams; // number of input parameters
     parameters *outputParameters;  // list of output parameters
     int numOutputParams; // number of output parameters
-    struct _idSymbolTable* link; // link to symbol table for that scope
+    struct _idSymbolTable link; // link to symbol table for that scope
+    int declarationLineNo, definitionLineNo; // line numbers of the module declaration and definitions respetively
 } symbolTableFuncEntry;
 
 

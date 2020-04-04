@@ -26,22 +26,12 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
         entry.AorP = 1;
         entry.type.array.arr = type->data.T;
         entry.type.array.dynamicArray = 0;
+        entry.type.array.lowerBound = type->sibling->children->data.T;
+        entry.type.array.upperBound = type->sibling->children->sibling->data.T;
 
-        // dynamic lower bound
-        if (type->sibling->children->data.T.tid == ID) 
+        // dynamic array
+        if (type->sibling->children->data.T.tid == ID || type->sibling->children->sibling->data.T.tid == ID) 
             entry.type.array.dynamicArray = 1;
-
-        // static lower bound
-        else 
-            entry.type.array.lowerBound = atoi(type->sibling->children->data.T.lexeme);
-
-        // dynamic upper bound 
-        if (type->sibling->children->sibling->data.T.tid == ID)
-            entry.type.array.dynamicArray = 1;
-
-        // static upper bound
-        else
-            entry.type.array.upperBound = atoi(type->sibling->children->sibling->data.T.lexeme); 
 
         entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
         if (entry.type.array.datatype.datatype.tid == INTEGER)
@@ -80,7 +70,9 @@ symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams
     entry.numInputParams = numInput;
     entry.outputParameters = outputParams;
     entry.numOutputParams = numOutput;
-    entry.link = NULL; // NEED TO LINK THIS
+    entry.declarationLineNo = -1;
+    entry.definitionLineNo = -1;
+    // entry.link = NULL; // NEED TO LINK THIS
     return entry;
 }
 
@@ -122,6 +114,12 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclaration) {
         astnode* id = root->children;
         symbolTableFuncEntry entry = createFuncEntry(id->data.T, NULL, 0, NULL, 0);
+        
+        // module hasn't been declared yet
+        if (entry.declarationLineNo == -1)
+            entry.declarationLineNo = id->data.T.lineNo;
+
+        // if it is declared, insert won't insert anything and flag an error in semantics
         funcTable = insertFunc(funcTable, entry); 
     }
 
@@ -156,7 +154,7 @@ void extractTypeAST(astnode* root) {
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
         symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, 0, NULL, 0);
-        entry.link = &currentIdTable;
+        entry.link = currentIdTable;
         funcTable = insertFunc(funcTable, entry);
         
         extractTypeAST(moduleDefNode);
@@ -257,15 +255,17 @@ void extractTypeAST(astnode* root) {
             existingEntry->inputParameters = inputParams;
             existingEntry->outputParameters = outputParams;
             existingEntry->id = identifier->data.T;
-            existingEntry->link = &currentIdTable;
+            existingEntry->link = currentIdTable;
             existingEntry->numInputParams = numInputParams;
             existingEntry->numOutputParams = numOutputParams;
+            existingEntry->definitionLineNo = identifier->data.T.lineNo;
         }
 
         // module hasn't been declared before
         else if (existingEntry == NULL) {
             symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, numInputParams, outputParams, numOutputParams);
-            funcEntry.link = &currentIdTable;
+            funcEntry.link = currentIdTable;
+            funcEntry.definitionLineNo = identifier->data.T.lineNo;
             funcTable = insertFunc(funcTable, funcEntry);
         }
 

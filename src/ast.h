@@ -11,10 +11,11 @@ typedef struct _astnode {
     treeData data; // current symbol
     int TorNT; // terminal or non-terminal
     token datatype; // for type-check
-    struct _astnode* parent;
     struct _astnode* children;
     struct _astnode* sibling;
-    idSymbolTable scopeTable;
+    idSymbolTable scopeTable; // corresponding symbol table for relevant node
+    int loopVariable; // can't update for loop variable
+    int isUpdated;  // whether output parameter has been updated or not
 } astnode;
 
 
