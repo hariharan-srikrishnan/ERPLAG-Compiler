@@ -16,6 +16,7 @@ typedef struct _astnode {
     idSymbolTable scopeTable; // corresponding symbol table for relevant node
     int loopVariable; // can't update for loop variable
     int isUpdated;  // whether output parameter has been updated or not
+    int isRedeclared; // whether identifier has already been declared before
 } astnode;
 
 

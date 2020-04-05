@@ -7,9 +7,9 @@
 #include "symboltable.h"
 
 // for testing
-// #include "lexer.h"
-// #include "parser.h"
-// #include "parserutils.h"
+#include "lexer.h"
+#include "parser.h"
+#include "parserutils.h"
 
 
 idSymbolTable currentIdTable, globalIdTable;
@@ -94,11 +94,6 @@ void extractTypeAST(astnode* root) {
             extractTypeAST(tmp);
             tmp = tmp->sibling;
         }
-
-        // extractTypeAST(root->children);
-        // extractTypeAST(root->children->sibling);
-        // extractTypeAST(root->children->sibling->sibling);
-        // extractTypeAST(root->children->sibling->sibling->sibling);
     }
 
     // moduleDeclarations -> moduleDeclaration moduleDeclarations
@@ -289,9 +284,20 @@ void extractTypeAST(astnode* root) {
         astnode* tmp = ids->children;
 
         while (tmp) {
-            symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
-            ids->datatype = datatypenode->data.T;
-            currentIdTable = insertId(currentIdTable, newEntry);
+            symbolTableIdEntry* entry = searchId(currentIdTable, tmp->data.T.lexeme);
+
+            // identifier has not been declared before in current scope
+            if (entry == NULL) {
+                symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
+                ids->datatype = datatypenode->data.T;
+                currentIdTable = insertId(currentIdTable, newEntry);
+            }
+
+            // redeclaration
+            else {
+                tmp->isRedeclared = 1;
+            }
+
             tmp = tmp->sibling;
         }
     }
@@ -378,6 +384,19 @@ void extractTypeAST(astnode* root) {
 }
 
 
+void traverseSymbolTable(idSymbolTable* curr) {
+    if (curr == NULL)
+        return;
+
+    printf("%d\n", curr->list->length);
+    idSymbolTable* tmp = curr->child;
+    while (tmp) {
+        traverseSymbolTable(tmp);
+        tmp = tmp->sibling;
+    }
+}
+
+
 // int main (int argc, char* argv[]) {
 //     parserfp = fopen("grammar.txt", "r");
 //     readGrammar(parserfp);
@@ -398,4 +417,5 @@ void extractTypeAST(astnode* root) {
 //     createAST(parseTreeRoot);
 //     printAST(parseTreeRoot->syn);
 //     extractTypeAST(parseTreeRoot->syn);
+//     traverseSymbolTable(&globalIdTable);
 // }

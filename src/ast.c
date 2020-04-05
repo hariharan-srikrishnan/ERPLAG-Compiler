@@ -539,9 +539,7 @@ void createAST(t_node* root) {
         createAST(idlist_ast);
 
         root->syn = createASTNode(root);
-        assign_ast->syn = createASTNode(assign_ast);
         root->syn->children = idlist_ast->syn;
-        idlist_ast->syn->sibling = assign_ast->syn;
     }
     
     // optional -> EPSILON
@@ -602,8 +600,7 @@ void createAST(t_node* root) {
         createAST(unaryop_ast);
         createAST(newNT_ast);
 
-        root->syn = createASTNode(unaryop_ast);
-        root->syn->children = unaryop_ast->syn;
+        root->syn = unaryop_ast->syn;
         unaryop_ast->syn->sibling = newNT_ast->syn;
     }
     
@@ -623,12 +620,14 @@ void createAST(t_node* root) {
 
     // unary_op -> PLUS
     else if (root->TorNT == 1 && root->data.NT.ntid == unary_op && root->children->TorNT == 0 && root->children->data.NT.ntid == PLUS) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // unary_op -> MINUS
     else if (root->TorNT == 1 && root->data.NT.ntid == unary_op && root->children->TorNT == 0 && root->children->data.NT.ntid == MINUS) {
-        root->syn = createASTNode(root->children);
+        root->syn = createASTNode(root);
+        root->syn->children = createASTNode(root->children);
     }
 
     // arithmeticOrBooleanExpr -> anyTerm N7
