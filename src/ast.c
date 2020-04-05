@@ -14,7 +14,7 @@ astnode* createASTNode(t_node* node) {
     newNode->children = NULL;
     newNode->sibling = NULL;
     newNode->loopVariable = 0;
-    newNode->isUpdated = 0;
+    // newNode->isUpdated = 0;
     return newNode;
 }
 
@@ -453,7 +453,7 @@ void createAST(t_node* root) {
         root->syn->children = whichStmt_ast->syn;    
 
         // id has been updated - will be used for semantic rule check
-        id_ast->syn->isUpdated = 1;    
+        // id_ast->syn->isUpdated = 1;    
     }
     
     // whichStmt -> lvalueIDStmt

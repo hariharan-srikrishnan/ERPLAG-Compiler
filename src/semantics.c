@@ -34,20 +34,21 @@ void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* id
     parameters* inputItr = param;
 
     while (idItr) {
-        printf("Input param: %s %s\n", inputItr->id.lexeme, idItr->data.T.lexeme);
-        idSymbolTable tmp = currentIdTable;
+        idSymbolTable* tmp = currentIdTable;
         symbolTableIdEntry* idEntry = NULL;
 
-        while (1)  {
+        idSymbolTable relevantTable = entry->link;
+        symbolTableIdEntry* inputEntry = searchId(relevantTable, inputItr->id.lexeme);
 
-            idEntry = searchId(tmp, idItr->data.T.lexeme);
+        while (1) {
+            idEntry = searchId(*tmp, idItr->data.T.lexeme);
             if (idEntry != NULL)
                 break;
             
-            // reached global symbol table
-            if (tmp.parent == &globalIdTable)
+            // not found in global symbol table as well
+            if (tmp->parent == NULL)
                 break;
-            tmp = *(tmp.parent);
+            tmp = tmp->parent;
         }
 
         // identifier not in any symbol table
@@ -59,44 +60,45 @@ void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* id
             semanticError = 1;
         }
 
-        // data type comparison (INT, REAL, BOOLEAN, ARRAY)
-        else if (idItr->datatype.tid == inputItr->datatype.tid) {
+        // both arrays
+        else if (idEntry->AorP == 1 && inputEntry->AorP == 1) {
+                
+            // should be of same data type 
+            if (idEntry->type.array.datatype.datatype.tid == inputEntry->type.array.datatype.datatype.tid) {
 
-            // find the symbol table entry - we might have an array
-            idSymbolTable relevantTable = entry->link;
-            symbolTableIdEntry* inputEntry = searchId(relevantTable, inputItr->id.lexeme);
+                // bound check only for static arrays
+                if (idEntry->type.array.dynamicArray == 0 && inputEntry->type.array.dynamicArray == 0) {
 
-            // array
-            if (idEntry->AorP == 1 && inputEntry->AorP == 1) {
-
-                // should be of same data type 
-                if (idEntry->type.array.datatype.datatype.tid == inputEntry->type.array.datatype.datatype.tid) {
-
-                    // bound check only for static arrays
-                    if (idEntry->type.array.dynamicArray == 0 && inputEntry->type.array.dynamicArray == 0) {
-
-                        // bound mismatch
-                        if (atoi(idEntry->type.array.lowerBound.lexeme) != atoi(inputEntry->type.array.lowerBound.lexeme) || atoi(idEntry->type.array.upperBound.lexeme) != atoi(inputEntry->type.array.upperBound.lexeme)) {
-                            redColor();
-                            printf("Type Error: ");
-                            resetColor();
-                            printf("Input parameter %s bound mismatch at line number: %d.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
-                            semanticError = 1;
-                        }
+                    // bound mismatch
+                    if (atoi(idEntry->type.array.lowerBound.lexeme) != atoi(inputEntry->type.array.lowerBound.lexeme) || atoi(idEntry->type.array.upperBound.lexeme) != atoi(inputEntry->type.array.upperBound.lexeme)) {
+                        redColor();
+                        printf("Type Error: ");
+                        resetColor();
+                        printf("Input parameter %s bound mismatch at line number: %d.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
+                        semanticError = 1;
                     }
                 }
             }
         }
 
-        // type mismatch
-        else {
+       // one is array and one is not
+       else if (idEntry->AorP != inputEntry->AorP) {
             redColor();
             printf("Type Error: ");
             resetColor();
             printf("Input parameter %s type mismatch at line number: %d.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
             semanticError = 1;
-        }
-        
+       }
+
+       // primitive and type mismatch
+       else if (idEntry->type.primitive.datatype.tid != inputEntry->type.primitive.datatype.tid) {
+            redColor();
+            printf("Type Error: ");
+            resetColor();
+            printf("Input parameter %s type mismatch at line number: %d.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
+            semanticError = 1;
+       }
+
         // number of parameter mismatch
         if ((idItr->sibling == NULL && inputItr->next != NULL) || (idItr->sibling != NULL && inputItr->next == NULL)) {
             redColor();
@@ -134,7 +136,7 @@ void semanticChecker(astnode* root) {
             semanticChecker(tmp);
             tmp = tmp->sibling;
         }
-        printf("Completed module declarations\n");
+        //printf("Completed module declarations\n");
     }
 
     /*
@@ -164,11 +166,11 @@ void semanticChecker(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
-        printf("In driver module\n");
-        currentIdTable = root->scopeTable;
+        //printf("In driver module\n");
+        currentIdTable = &(root->scopeTable);
         semanticChecker(root->children->sibling);
-        currentIdTable = *(currentIdTable.parent);
-        printf("Completed driver module\n");
+        currentIdTable = currentIdTable->parent;
+        //printf("Completed driver module\n");
     }
 
     /*
@@ -176,17 +178,17 @@ void semanticChecker(astnode* root) {
         2. Output parameters should be updated (if they exist) - see isUpdated AST node variable
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == module) {
-        currentIdTable = root->scopeTable;
+        currentIdTable = &(root->scopeTable);
         astnode* funcName = root->children;
 
         symbolTableFuncEntry* entry = searchFunc(funcTable, funcName->data.T.lexeme);
         
         // function has already been defined once
-        if (entry->definitionLineNo != -1) {
+        if (entry->definitionLineNo != funcName->data.T.lineNo) {
             redColor();
             printf("Semantic Error: ");
             resetColor();
-            printf("Function at line %d already defined.\n", funcName->data.T.lineNo);
+            printf("Function at line %d already defined, at line number: %d.\n", funcName->data.T.lineNo, entry->definitionLineNo);
             semanticError = 1;
         }
 
@@ -207,33 +209,35 @@ void semanticChecker(astnode* root) {
 
         if (ret_ast) {
             astnode* tmp = ret_ast->children;
+            printf("%s\n", ret_ast->data.NT.name);
             while (tmp) {
 
                 // output parameter hasn't been updated
-                if (tmp->isUpdated == 0) {
-                    redColor();
-                    printf("Semantic Error: ");
-                    resetColor();
-                    printf("Output parameter %s not assigned a value in function defined at line number: %d.\n", tmp->data.T.lexeme, funcName->data.T.lineNo);
-                    semanticError = 1;
-                }
-                tmp = tmp->sibling;
+                // if (tmp->isUpdated == 0) {
+                //     redColor();
+                //     printf("Semantic Error: ");
+                //     resetColor();
+                //     printf("Output parameter %s not assigned a value in function defined at line number: %d.\n", tmp->data.T.lexeme, funcName->data.T.lineNo);
+                //     semanticError = 1;
+                // }
+                tmp = tmp->sibling->sibling;
             }
         }
 
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDef) {
-        printf("In moduleDef\n");
+        //printf("In moduleDef\n");
         semanticChecker(root->children);
-        printf("Completed moduleDef\n");
+        //printf("Completed moduleDef\n");
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == statements) {
         astnode* tmp = root->children;
         while (tmp) {
             semanticChecker(tmp);
+            exprError = 0;
             tmp = tmp->sibling;
         }
     }
@@ -242,10 +246,10 @@ void semanticChecker(astnode* root) {
         1. Identifier declared
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == ioStmt && root->children->TorNT == 0 && root->children->data.T.tid == GET_VALUE) {
-        printf("In get value\n");
+        // printf("In get value\n");
         astnode* id = root->children->sibling;
         semanticChecker(id);
-        printf("Completed get value\n");
+        // printf("Completed get value\n");
     }
 
     /*
@@ -269,20 +273,20 @@ void semanticChecker(astnode* root) {
             else {
                 // array
                 char* id = id_ast->data.T.lexeme;
-                idSymbolTable tmp = currentIdTable;
+                idSymbolTable* tmp = currentIdTable;
                 symbolTableIdEntry* entry = NULL; 
 
                 while (1) {
-                    entry = searchId(tmp, id);
+                    entry = searchId(*tmp, id);
                     
                     // found in the symbol table
                     if (entry != NULL)
                         break;
                     
                     // not found in global symbol table as well
-                    if (tmp.parent == NULL)
+                    if (tmp->parent == NULL)
                         break;
-                    tmp = *(tmp.parent);
+                    tmp = tmp->parent;
                 }
 
                 if (entry == NULL) {
@@ -310,7 +314,7 @@ void semanticChecker(astnode* root) {
                         redColor();
                         printf("Type Error: ");
                         resetColor();
-                        printf("Index %d out of bounds at line numer: %d.\n", indexValue, id_ast->data.T.lineNo);
+                        printf("Index %d out of bounds at line number: %d.\n", indexValue, id_ast->data.T.lineNo);
                         semanticError = 1;               
                     }
 
@@ -321,7 +325,7 @@ void semanticChecker(astnode* root) {
                     redColor();
                     printf("Semantic Error: ");
                     resetColor();
-                    printf("Index is not an integer at line numer: %d.\n", id_ast->data.T.lineNo);
+                    printf("Index is not an integer at line number: %d.\n", id_ast->data.T.lineNo);
                     semanticError = 1;               
                 }
             }
@@ -338,7 +342,7 @@ void semanticChecker(astnode* root) {
         3. Bound check
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == assignmentStmt) {
-        printf("In assignment stmt\n");
+        //printf("In assignment stmt\n");
         astnode* assignop = root->children;
         astnode* id = assignop->children;
         
@@ -358,35 +362,40 @@ void semanticChecker(astnode* root) {
             astnode* expr = id->sibling->children;
             semanticChecker(expr);
 
+            if (exprError == 1) {
+                exprError = 0;
+                return;
+            }
+
+
             // type mismatch
-            if (idFound == 1 && expr->datatype.tid != id->datatype.tid) {
+            if (idFound == 1 && id->datatype.tid != expr->datatype.tid) {
                 redColor();
                 printf("Type Error: ");
                 resetColor();
                 printf("Type mismatch at line number: %d.\n", id->data.T.lineNo);
+                printf("%d, %d\n", id->datatype.tid, expr->datatype.tid);
                 semanticError = 1;
-            }
-
-            idFound = 1;
+            }  
         }
 
         // array
         else {
             astnode* idx = id->sibling;
-            idSymbolTable tmp = currentIdTable;
+            idSymbolTable* tmp = currentIdTable;
             symbolTableIdEntry* entry = NULL; 
 
             while (1) {
-                entry = searchId(tmp, id->data.T.lexeme);
+                entry = searchId(*tmp, id->data.T.lexeme);
                 
                 // found in the symbol table
                 if (entry != NULL)
                     break;
                 
                 // not found in global symbol table as well
-                if (tmp.parent == NULL)
+                if (tmp->parent == NULL)
                     break;
-                tmp = *(tmp.parent);
+                tmp = tmp->parent;
             }
 
             if (entry == NULL) {
@@ -401,6 +410,11 @@ void semanticChecker(astnode* root) {
             
             astnode* expr = idx->sibling->children;
             semanticChecker(expr);
+
+            if (exprError == 1) {
+                exprError = 0;
+                return;
+            }
 
             // whether we can perform static bound check
             if (idx->TorNT == 0 && idx->data.T.tid == NUM && entry->AorP == 1 && entry->type.array.dynamicArray == 0) {
@@ -436,11 +450,14 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Index is not an integer at line numer: %d.\n", id->data.T.lineNo);
+                printf("Index is not an integer at line number: %d.\n", id->data.T.lineNo);
                 semanticError = 1;               
             }
         }
-        printf("Completed assignment stmt\n");
+        
+        idFound = 1;
+        exprError = 0;
+        //printf("Completed assignment stmt\n");
     }
 
     /* 
@@ -451,7 +468,7 @@ void semanticChecker(astnode* root) {
         5. Output parameter type and number check - matchParameters()
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleReuseStmt) {
-        printf("In module reuse stmt\n");
+        //printf("In module reuse stmt\n");
         astnode *functionName, *opt;
         if (root->children->TorNT == 1 && root->children->data.NT.ntid == optional) {
             opt = root->children;
@@ -465,7 +482,6 @@ void semanticChecker(astnode* root) {
 
         astnode* idlist = functionName->sibling;
         symbolTableFuncEntry* entry = searchFunc(funcTable, functionName->data.T.lexeme);
-        printf("%d, %d\n", entry->declarationLineNo, entry->definitionLineNo);
         int currLineNo = functionName->data.T.lineNo;
 
         // called function not defined
@@ -479,7 +495,7 @@ void semanticChecker(astnode* root) {
         }
 
         // recursive call -- current symbol table is same as the one being called
-        if (&currentIdTable == &(entry->link)) {
+        if (currentIdTable == &(entry->link)) {
             redColor();
             printf("Semantic Error: ");
             resetColor();
@@ -516,7 +532,6 @@ void semanticChecker(astnode* root) {
             astnode* tmp = opt->children;
             while (tmp) {
                 semanticChecker(tmp);
-                // semanticError = 0;
                 tmp = tmp->sibling;
             }
         }
@@ -537,7 +552,7 @@ void semanticChecker(astnode* root) {
             matchParameters(entry, outputItr, idlist);
         }
 
-        printf("Completed module reuse stmt\n");
+        //printf("Completed module reuse stmt\n");
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == expression) {
@@ -545,16 +560,17 @@ void semanticChecker(astnode* root) {
 
         // traverse new_NT's corresponding AST
         if (tmp->TorNT == 1 && tmp->data.NT.ntid == unary_op) {
-            printf("In unary op\n");
+            //printf("In unary op\n");
             semanticChecker(tmp->sibling);
-            printf("Completed unary op\n");
+            root->datatype.tid = tmp->sibling->datatype.tid;
+            //printf("Completed unary op\n");
         }
 
         // arithmeticOrBooleans's corresponding AST
-        else 
+        else {
             semanticChecker(tmp);
-
-        exprError = 0;
+            root->datatype.tid = tmp->datatype.tid;
+        }
     }
 
     /*
@@ -651,13 +667,12 @@ void semanticChecker(astnode* root) {
         1. Identifier redeclaration - see reDeclared AST node variable
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == declareStmt) {
-        printf("In declare stmt\n");
+        //printf("In declare stmt\n");
         astnode* idlist = root->children;
         astnode* tmp = idlist->children;
 
         while (tmp) {
             char* id = tmp->data.T.lexeme;
-            idSymbolTable itr = currentIdTable;
             symbolTableIdEntry* entry = NULL;
 
             // found in current symbol table - but a redeclaration
@@ -671,7 +686,7 @@ void semanticChecker(astnode* root) {
 
             tmp = tmp->sibling;
         }
-        printf("Completed declare stmt\n");
+        //printf("Completed declare stmt\n");
     }
 
     /* 
@@ -681,7 +696,7 @@ void semanticChecker(astnode* root) {
         4. If boolean, must not contain default statement
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == conditionalStmt) {
-        currentIdTable = root->scopeTable;
+        currentIdTable = &(root->scopeTable);
         astnode* id = root->children;
         astnode* caseStatements = id->sibling;
         astnode* default_ast = caseStatements->sibling;
@@ -731,7 +746,7 @@ void semanticChecker(astnode* root) {
         1. Each case value variable should be integer
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == caseStmts) {
-        currentIdTable = root->scopeTable;
+        currentIdTable = &(root->scopeTable);
         astnode* tmp = root->children;
         while (tmp) {
 
@@ -747,7 +762,7 @@ void semanticChecker(astnode* root) {
             semanticChecker(tmp);
             tmp = tmp->sibling;
         }
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     /*
@@ -756,7 +771,7 @@ void semanticChecker(astnode* root) {
         3. Loop variable shouldn't be updated - handled in assignmentStmt
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == FOR) {
-        currentIdTable = root->scopeTable;
+        currentIdTable = &(root->scopeTable);
         astnode* id = root->children->sibling;
         
         // identifier not found in symbol table
@@ -772,21 +787,16 @@ void semanticChecker(astnode* root) {
             semanticError = 1;
         }
 
-
-        // identifier in symbol table - can't be updated
-        else if (idFound == 1) {
-        }
-
         astnode* stmts = id->sibling->sibling;
         semanticChecker(stmts);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     /*
         1. Expression should be of boolean type
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == WHILE) {
-        currentIdTable = root->scopeTable;
+        currentIdTable = &(root->scopeTable);
         int currLineNo = root->children->data.T.lineNo;
         astnode* abexpr = root->children->sibling;
         semanticChecker(abexpr);
@@ -804,7 +814,7 @@ void semanticChecker(astnode* root) {
         semanticChecker(stmts);
         
         // set current table back to outer scope
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     /*
@@ -813,22 +823,22 @@ void semanticChecker(astnode* root) {
     */
     else if (root->TorNT == 0 && root->data.T.tid == ID) {
         char* id = root->data.T.lexeme;
-        idSymbolTable tmp = currentIdTable;
+        idSymbolTable* tmp = currentIdTable;
         symbolTableIdEntry* entry = NULL;
 
         while(1) {
-             entry = searchId(currentIdTable, id);
+             entry = searchId(*tmp, id);
 
             // found in current scope
             if (entry != NULL)
                 break;
             
             // if reached global parent
-            if (tmp.parent == NULL)
+            if (tmp->parent == NULL)
                 break;
             
             // setting scope to parent scope
-            tmp = *(tmp.parent);
+            tmp = tmp->parent;
         }
 
         // not found in any symbol table
@@ -839,6 +849,15 @@ void semanticChecker(astnode* root) {
             printf("Identifier %s at line %d has not been declared.\n", id, root->data.T.lineNo);
             idFound = 0;
             semanticError = 1;
+        }
+
+        else {
+            if (entry->AorP == 0)
+                root->datatype = entry->type.primitive.datatype;
+            
+            else 
+                root->datatype.tid = ARRAY;
+
         }
     }
 }

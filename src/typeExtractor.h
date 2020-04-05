@@ -5,7 +5,7 @@
 #include "ast.h"
 
 
-extern idSymbolTable currentIdTable, globalIdTable;
+extern idSymbolTable *currentIdTable, *globalIdTable;
 extern funcSymbolTable funcTable;
 
 // create an entry for ID symbol table
@@ -16,5 +16,15 @@ symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams
 
 // traverse AST for type extraction
 void extractTypeAST(astnode* root);
+
+// link two tables
+void linkTables (idSymbolTable* currentTable, idSymbolTable* newTable);
+
+// traverse all identifier symbol tables until global symbol table
+void traverseSymbolTable(idSymbolTable* curr);
+
+// print the function symbol table
+void printFunctionTable(funcSymbolTable table);
+
 
 #endif

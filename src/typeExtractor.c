@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +11,10 @@
 #include "lexer.h"
 #include "parser.h"
 #include "parserutils.h"
+void traverseSymbolTable(idSymbolTable* table);
 
 
-idSymbolTable currentIdTable, globalIdTable;
+idSymbolTable *currentIdTable, *globalIdTable;
 funcSymbolTable funcTable;
 
 
@@ -77,6 +79,24 @@ symbolTableFuncEntry createFuncEntry(token functionName, parameters* inputParams
 }
 
 
+// link two symbol tables
+void linkTables (idSymbolTable* currentTable, idSymbolTable* newTable) {
+    if (currentTable == newTable)
+        return;
+    
+    newTable->parent = currentTable;
+    if (currentTable->child == NULL)
+        currentTable->child = newTable;
+
+    else {
+        idSymbolTable* tmp = currentTable->child;
+        while (tmp->sibling)
+            tmp = tmp->sibling;
+        tmp->sibling = newTable;
+    }
+}
+
+
 // traverse AST for type extraction
 void extractTypeAST(astnode* root) {
 
@@ -85,7 +105,8 @@ void extractTypeAST(astnode* root) {
 
     // program -> moduleDeclarations otherModules driverModule otherModules 
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
-        currentIdTable = createIdSymbolTable();
+        idSymbolTable firstTable = createIdSymbolTable();
+        currentIdTable = &firstTable;
         globalIdTable = currentIdTable;
         funcTable = createFuncSymbolTable();
 
@@ -132,28 +153,19 @@ void extractTypeAST(astnode* root) {
         
         // create a new symbol table
         idSymbolTable newIdTable = createIdSymbolTable();
-        newIdTable.parent = &currentIdTable;
-        if (currentIdTable.child == NULL) 
-            currentIdTable.child = &newIdTable;
-        
-        else {
-            idSymbolTable* tmp = currentIdTable.child;
-            while (tmp->sibling) 
-                tmp = tmp->sibling;
-            tmp->sibling = &newIdTable;
-        }
-        
-        currentIdTable = newIdTable;
-        root->scopeTable = currentIdTable;
+        linkTables(currentIdTable, &newIdTable);
+        currentIdTable = &newIdTable;
+        root->scopeTable = *currentIdTable;
         
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
         symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, 0, NULL, 0);
-        entry.link = currentIdTable;
+        entry.link = *currentIdTable;
+        entry.definitionLineNo = root->children->data.T.lineNo;
         funcTable = insertFunc(funcTable, entry);
         
         extractTypeAST(moduleDefNode);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     // moduleDef -> START statements END
@@ -166,19 +178,9 @@ void extractTypeAST(astnode* root) {
         
         // create a new symbol table
         idSymbolTable newIdTable = createIdSymbolTable();
-        newIdTable.parent = &currentIdTable;
-        if (currentIdTable.child == NULL) 
-            currentIdTable.child = &newIdTable;
-        
-        else {
-            idSymbolTable* tmp = currentIdTable.child;
-            while (tmp->sibling) 
-                tmp = tmp->sibling;
-            tmp->sibling = &newIdTable;
-        }
-        
-        currentIdTable = newIdTable;
-        root->scopeTable = currentIdTable;
+        linkTables(currentIdTable, &newIdTable);
+        currentIdTable = &newIdTable;
+        root->scopeTable = *currentIdTable;
 
         // add input parameters to identifier table and function parameters to function table
         astnode* identifier = root->children;
@@ -196,7 +198,7 @@ void extractTypeAST(astnode* root) {
         parameters* prev = inputParams;
 
         symbolTableIdEntry idEntry = createIdEntry(inputParams->id, datatypenode);
-        currentIdTable = insertId(currentIdTable, idEntry);
+        *currentIdTable = insertId(*currentIdTable, idEntry);
 
         while (tmp) {
             parameters* curr = (parameters*) malloc(sizeof(parameters));
@@ -209,8 +211,8 @@ void extractTypeAST(astnode* root) {
             tmp = tmp->sibling;
             numInputParams++;
 
-            idEntry = createIdEntry(inputParams->id, datatypenode);
-            currentIdTable = insertId(currentIdTable, idEntry);
+            idEntry = createIdEntry(curr->id, datatypenode);
+            *currentIdTable = insertId(*currentIdTable, idEntry);
         }
 
         // output paramaters aren't NULL -- i.e > 1
@@ -232,15 +234,22 @@ void extractTypeAST(astnode* root) {
             prev = outputParams;
             numOutputParams++;
 
+            idEntry = createIdEntry(outputParams->id, typenode);
+            *currentIdTable = insertId(*currentIdTable, idEntry);
+
             while (tmp) {
                 parameters* curr = (parameters*) malloc(sizeof(parameters));
                 curr->id = tmp->data.T;
                 tmp = tmp->sibling; // to datatype node
+                typenode = tmp->children;
                 curr->datatype = tmp->data.T;
                 prev->next = curr;
                 prev = curr;
                 tmp = tmp->sibling;
                 numOutputParams++;
+
+                idEntry = createIdEntry(curr->id, typenode);
+                *currentIdTable = insertId(*currentIdTable, idEntry);
             }
         }
 
@@ -250,7 +259,7 @@ void extractTypeAST(astnode* root) {
             existingEntry->inputParameters = inputParams;
             existingEntry->outputParameters = outputParams;
             existingEntry->id = identifier->data.T;
-            existingEntry->link = currentIdTable;
+            existingEntry->link = *currentIdTable;
             existingEntry->numInputParams = numInputParams;
             existingEntry->numOutputParams = numOutputParams;
             existingEntry->definitionLineNo = identifier->data.T.lineNo;
@@ -259,13 +268,14 @@ void extractTypeAST(astnode* root) {
         // module hasn't been declared before
         else if (existingEntry == NULL) {
             symbolTableFuncEntry funcEntry = createFuncEntry(identifier->data.T, inputParams, numInputParams, outputParams, numOutputParams);
-            funcEntry.link = currentIdTable;
+            funcEntry.link = *currentIdTable;
             funcEntry.definitionLineNo = identifier->data.T.lineNo;
             funcTable = insertFunc(funcTable, funcEntry);
         }
 
         extractTypeAST(moduleDefNode);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
+        // return currentIdTable;
     }
 
     // statements -> statement statements
@@ -284,13 +294,13 @@ void extractTypeAST(astnode* root) {
         astnode* tmp = ids->children;
 
         while (tmp) {
-            symbolTableIdEntry* entry = searchId(currentIdTable, tmp->data.T.lexeme);
+            symbolTableIdEntry* entry = searchId(*currentIdTable, tmp->data.T.lexeme);
 
             // identifier has not been declared before in current scope
             if (entry == NULL) {
                 symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
-                ids->datatype = datatypenode->data.T;
-                currentIdTable = insertId(currentIdTable, newEntry);
+                tmp->datatype = datatypenode->data.T;
+                *currentIdTable = insertId(*currentIdTable, newEntry);
             }
 
             // redeclaration
@@ -307,23 +317,13 @@ void extractTypeAST(astnode* root) {
 
         // create a new symbol table
         idSymbolTable newIdTable = createIdSymbolTable();
-        newIdTable.parent = &currentIdTable;
-        if (currentIdTable.child == NULL) 
-            currentIdTable.child = &newIdTable;
-        
-        else {
-            idSymbolTable* tmp = currentIdTable.child;
-            while (tmp->sibling) 
-                tmp = tmp->sibling;
-            tmp->sibling = &newIdTable;
-        }
-        
-        currentIdTable = newIdTable;
-        root->scopeTable = currentIdTable;
+        linkTables(currentIdTable, &newIdTable);
+        currentIdTable = &newIdTable;
+        root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling);
         extractTypeAST(root->children->sibling->sibling);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     // caseStmts -> CASE value COLON statements BREAK SEMICOL N9
@@ -341,22 +341,12 @@ void extractTypeAST(astnode* root) {
 
         // create a new symbol table
         idSymbolTable newIdTable = createIdSymbolTable();
-        newIdTable.parent = &currentIdTable;
-        if (currentIdTable.child == NULL) 
-            currentIdTable.child = &newIdTable;
-        
-        else {
-            idSymbolTable* tmp = currentIdTable.child;
-            while (tmp->sibling) 
-                tmp = tmp->sibling;
-            tmp->sibling = &newIdTable;
-        }
-        
-        currentIdTable = newIdTable;
-        root->scopeTable = currentIdTable;
+        linkTables(currentIdTable, &newIdTable);
+        currentIdTable = &newIdTable;
+        root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling->sibling);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 
     // iterativeStmt -> WHILE BO arithmeticOrBooleanExpr BC START statements END
@@ -364,35 +354,45 @@ void extractTypeAST(astnode* root) {
        
         // create a new symbol table
         idSymbolTable newIdTable = createIdSymbolTable();
-        newIdTable.parent = &currentIdTable;
-        if (currentIdTable.child == NULL) 
-            currentIdTable.child = &newIdTable;
-        
-        else {
-            idSymbolTable* tmp = currentIdTable.child;
-            while (tmp->sibling) 
-                tmp = tmp->sibling;
-            tmp->sibling = &newIdTable;
-        }
-        
-        currentIdTable = newIdTable;
-        root->scopeTable = currentIdTable;
+        linkTables(currentIdTable, &newIdTable);
+        currentIdTable = &newIdTable;
+        root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling);
-        currentIdTable = *(currentIdTable.parent);
+        currentIdTable = currentIdTable->parent;
     }
 }
 
 
+// traverse current and all children symbol tables
 void traverseSymbolTable(idSymbolTable* curr) {
     if (curr == NULL)
         return;
 
-    printf("%d\n", curr->list->length);
+    for (int i = 0; i < curr->hashSize; i++) {
+        idNode* tmp = curr->list[i].head;
+        while (tmp) {
+            printf("\t%s %s\n", tmp->entry.name, tmp->entry.type.primitive.datatype.lexeme);
+            tmp = tmp->next;
+        }
+    }
     idSymbolTable* tmp = curr->child;
     while (tmp) {
+        printf("\n");
         traverseSymbolTable(tmp);
         tmp = tmp->sibling;
+    }
+}
+
+
+// print function symbol table
+void printFunctionTable(funcSymbolTable table) {
+    for(int i = 0; i < table.hashSize; i++) {
+        funcNode* tmp = table.list[i].head;
+        while (tmp) {
+            printf("%s Dec: %d Def: %d\n", tmp->entry.name, tmp->entry.declarationLineNo, tmp->entry.definitionLineNo);
+            tmp = tmp->next;
+        }
     }
 }
 
@@ -417,5 +417,6 @@ void traverseSymbolTable(idSymbolTable* curr) {
 //     createAST(parseTreeRoot);
 //     printAST(parseTreeRoot->syn);
 //     extractTypeAST(parseTreeRoot->syn);
-//     traverseSymbolTable(&globalIdTable);
+//     traverseSymbolTable(globalIdTable);
+//     printFunctionTable(funcTable);
 // }
