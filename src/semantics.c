@@ -7,25 +7,8 @@
 #include "symboltable.h"
 #include "typeExtractor.h"
 
-// for testing
-#include "parser.h"
-#include "parserutils.h"
-
 int semanticError = 0;
 int idFound = 1;
-int exprError = 0;
-
-/*
-    TO-DO:
-        1. Arithmetic expressions - DONE
-        2. Check parent scopes for variable - DONE
-            (a) Should parent and child be pointers - YES, IT WORKS!
-        3. Change link from arrow to dot in function symbol table entries - DONE
-        4. Print relevant semantic errors wherever semanticError = 1 -- IN PROGRESS
-        5. Arrays in arithmetic expressions
-            (a) Dynamic upper and lower bounds? - DONE
-            (b) Array dynamic bounds should be checked for integer and not inserted in symbol table
-*/
 
 
 // type and number check for function parameters
@@ -56,7 +39,7 @@ void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* id
             redColor();
             printf("Semantic Error: ");
             resetColor();
-            printf("Identifier %s has not been declared at line number: %d.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
+            printf("Identifier %s at line number %d has not been declared.\n", idItr->data.T.lexeme, idItr->data.T.lineNo);
             semanticError = 1;
         }
 
@@ -144,7 +127,6 @@ void semanticChecker(astnode* root) {
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == moduleDeclaration) {
         astnode* funcName = root->children;
-        printf("%s\n", funcName->data.T.lexeme);
         symbolTableFuncEntry* entry = searchFunc(funcTable, funcName->data.T.lexeme);
 
         // function redeclaration isn't allowed
@@ -175,7 +157,7 @@ void semanticChecker(astnode* root) {
 
     /*
         1. Function redefinition
-        2. Output parameters should be updated (if they exist) - see isUpdated AST node variable
+        2. Output parameters should be updated (if they exist) - see isUpdated symbol table node variable
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == module) {
         currentIdTable = &(root->scopeTable);
@@ -208,19 +190,45 @@ void semanticChecker(astnode* root) {
         semanticChecker(moduledef);
 
         if (ret_ast) {
-            astnode* tmp = ret_ast->children;
-            printf("%s\n", ret_ast->data.NT.name);
-            while (tmp) {
+            astnode* itr = ret_ast->children;
+            while (itr) {
+
+                idSymbolTable* tmp = currentIdTable;
+                symbolTableIdEntry* entry = NULL; 
+
+                while (1) {
+                    entry = searchId(*tmp, itr->data.T.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    // not found in global symbol table as well
+                    if (tmp->parent == NULL)
+                        break;
+                    tmp = tmp->parent;
+                }
+
+                if (entry == NULL) {
+                    redColor();
+                    printf("Semantic Error: ");
+                    resetColor();
+                    printf("Identifier %s at line number %d has not been declared.\n", itr->data.T.lexeme, root->data.T.lineNo);
+                    semanticError = 1;
+                    idFound = 1;
+                }
 
                 // output parameter hasn't been updated
-                // if (tmp->isUpdated == 0) {
-                //     redColor();
-                //     printf("Semantic Error: ");
-                //     resetColor();
-                //     printf("Output parameter %s not assigned a value in function defined at line number: %d.\n", tmp->data.T.lexeme, funcName->data.T.lineNo);
-                //     semanticError = 1;
-                // }
-                tmp = tmp->sibling->sibling;
+                if (entry->isUpdated == 0) {
+                    redColor();
+                    printf("Semantic Error: ");
+                    resetColor();
+                    printf("Output parameter %s not assigned a value in function defined at line number: %d.\n", itr->data.T.lexeme, funcName->data.T.lineNo);
+                    semanticError = 1;
+                }
+
+                // next node is a type node in output_plist
+                itr = itr->sibling->sibling;
             }
         }
 
@@ -237,7 +245,6 @@ void semanticChecker(astnode* root) {
         astnode* tmp = root->children;
         while (tmp) {
             semanticChecker(tmp);
-            exprError = 0;
             tmp = tmp->sibling;
         }
     }
@@ -293,7 +300,7 @@ void semanticChecker(astnode* root) {
                     redColor();
                     printf("Semantic Error: ");
                     resetColor();
-                    printf("Identifier %s at line %d has not been declared.\n", id, root->data.T.lineNo);
+                    printf("Identifier %s at line number %d has not been declared.\n", id, root->data.T.lineNo);
                     semanticError = 1;
                     return;
                 }
@@ -338,7 +345,7 @@ void semanticChecker(astnode* root) {
 
     /*
         1. Type check for LHS and RHS
-        2. Can't update loop variable - see loopVariable AST node variable
+        2. Can't update loop variable - see loopVariable symbol table variable
         3. Bound check
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == assignmentStmt) {
@@ -348,10 +355,36 @@ void semanticChecker(astnode* root) {
         
         // not an array
         if (id->sibling->TorNT == 1 && id->sibling->data.NT.ntid == lvalueIDStmt) {
-            semanticChecker(id);
+            idSymbolTable* tmp = currentIdTable;
+            symbolTableIdEntry* entry = NULL; 
+
+            while (1) {
+                entry = searchId(*tmp, id->data.T.lexeme);
+                
+                // found in the symbol table
+                if (entry != NULL)
+                    break;
+                
+                // not found in global symbol table as well
+                if (tmp->parent == NULL)
+                    break;
+                tmp = tmp->parent;
+            }
+
+            if (entry == NULL) {
+                redColor();
+                printf("Semantic Error: ");
+                resetColor();
+                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, root->data.T.lineNo);
+                semanticError = 1;
+                idFound = 1;
+                return;
+            }
+            
+            entry->isUpdated = 1;
 
             // cannot update loop variable
-            if (idFound == 1 && id->loopVariable == 1) {
+            if (entry->loopVariable == 1) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
@@ -362,19 +395,24 @@ void semanticChecker(astnode* root) {
             astnode* expr = id->sibling->children;
             semanticChecker(expr);
 
-            if (exprError == 1) {
-                exprError = 0;
+            if (expr->datatype.tid == EPSILON) 
                 return;
-            }
-
-
-            // type mismatch
-            if (idFound == 1 && id->datatype.tid != expr->datatype.tid) {
+            
+            // array and not an array
+            if (entry->AorP == 1 && expr->datatype.tid != ARRAY) {
                 redColor();
                 printf("Type Error: ");
                 resetColor();
-                printf("Type mismatch at line number: %d.\n", id->data.T.lineNo);
-                printf("%d, %d\n", id->datatype.tid, expr->datatype.tid);
+                printf("Array assignment mismatch at line number: %d.\n", id->data.T.lineNo);
+                semanticError = 1;
+            }
+
+            // type mismatch
+            else if (entry->AorP == 0 && entry->type.primitive.datatype.tid != expr->datatype.tid) {
+                redColor();
+                printf("Type Error: ");
+                resetColor();
+                printf("Assignment type mismatch at line number: %d.\n", id->data.T.lineNo);
                 semanticError = 1;
             }  
         }
@@ -402,19 +440,18 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Identifier %s at line %d has not been declared.\n", id->data.T.lexeme, root->data.T.lineNo);
+                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, root->data.T.lineNo);
                 semanticError = 1;
                 idFound = 1;
                 return;
             }
             
+            entry->isUpdated = 1;
             astnode* expr = idx->sibling->children;
             semanticChecker(expr);
 
-            if (exprError == 1) {
-                exprError = 0;
+            if (expr->datatype.tid == EPSILON) 
                 return;
-            }
 
             // whether we can perform static bound check
             if (idx->TorNT == 0 && idx->data.T.tid == NUM && entry->AorP == 1 && entry->type.array.dynamicArray == 0) {
@@ -456,7 +493,6 @@ void semanticChecker(astnode* root) {
         }
         
         idFound = 1;
-        exprError = 0;
         //printf("Completed assignment stmt\n");
     }
 
@@ -523,7 +559,7 @@ void semanticChecker(astnode* root) {
 
         // match type and number of input parameters
         matchParameters(entry, entry->inputParameters, idlist);
-        printf("Input parameter check complete!\n");
+        // printf("Input parameter check complete!\n");
         
         parameters* outputItr = entry->outputParameters;
         
@@ -581,12 +617,20 @@ void semanticChecker(astnode* root) {
         astnode* leftchild = root->children;
         astnode* rightchild = leftchild->sibling;
 
-        if (exprError == 1)
-            return;
-
         // even if ID, NUM, RNUM, it will simply return back with no computation
         semanticChecker(leftchild);
         semanticChecker(rightchild);
+
+         // there is a type error somewhere already
+        if (leftchild->datatype.tid == EPSILON || rightchild->datatype.tid == EPSILON) {
+            root->datatype.tid = EPSILON;
+            return;
+        }
+
+        if (idFound == 0) {
+            root->datatype.tid = EPSILON;
+            return;
+        }
 
         // left and right child AST nodes should now have stored type in the root 
         if (leftchild->datatype.tid == rightchild->datatype.tid && (leftchild->datatype.tid == INTEGER || leftchild->datatype.tid == REAL))
@@ -599,7 +643,7 @@ void semanticChecker(astnode* root) {
             resetColor();
             printf("Type mismatch at line number: %d.\n", root->data.T.lineNo);
             semanticError = 1;
-            exprError = 1;
+            root->datatype.tid = EPSILON;
         }
     }
 
@@ -611,12 +655,20 @@ void semanticChecker(astnode* root) {
         astnode* leftchild = root->children;
         astnode* rightchild = leftchild->sibling;
 
-        if (exprError == 1)
-            return;
-
         // even if ID, NUM, RNUM, it will simply return back with no computation
         semanticChecker(leftchild);
         semanticChecker(rightchild);
+
+        // there is a type error somewhere already
+        if (leftchild->datatype.tid == EPSILON || rightchild->datatype.tid == EPSILON) {
+            root->datatype.tid = EPSILON;
+            return;
+        }
+
+        if (idFound == 0) {
+            root->datatype.tid = EPSILON;
+            return;
+        }
 
         // left and right child AST nodes should now have stored type in the root 
         if (leftchild->datatype.tid == rightchild->datatype.tid && leftchild->datatype.tid == BOOLEAN)
@@ -629,7 +681,7 @@ void semanticChecker(astnode* root) {
             resetColor();
             printf("Type mismatch at line number: %d.\n", root->data.T.lineNo);
             semanticError = 1;
-            exprError = 1;
+            root->datatype.tid = EPSILON;
         }
     }
 
@@ -641,16 +693,24 @@ void semanticChecker(astnode* root) {
         astnode* leftchild = root->children;
         astnode* rightchild = leftchild->sibling;
 
-        if (exprError == 1)
-            return;
-
         // even if ID, NUM, RNUM, it will simply return back with no computation
         semanticChecker(leftchild);
         semanticChecker(rightchild);
 
+        // there is a type error somewhere already
+         if (leftchild->datatype.tid == EPSILON || rightchild->datatype.tid == EPSILON) {
+            root->datatype.tid = EPSILON;
+            return;
+         }
+
+        if (idFound == 0) {
+            root->datatype.tid = EPSILON;
+            return;
+        }
+
          // left and right child AST nodes should now have stored type in the root 
         if (leftchild->datatype.tid == rightchild->datatype.tid && (leftchild->datatype.tid == INTEGER || leftchild->datatype.tid == REAL))
-            root->datatype.tid = leftchild->datatype.tid;
+            root->datatype.tid = BOOLEAN;
 
         // semantic error - probably skip the entire expression?
         else {
@@ -659,32 +719,143 @@ void semanticChecker(astnode* root) {
             resetColor();
             printf("Type mismatch at line number: %d.\n", root->data.T.lineNo);
             semanticError = 1;
-            exprError = 1;
+            root->datatype.tid = EPSILON;
         }
     }
 
     /*
-        1. Identifier redeclaration - see reDeclared AST node variable
+        1. Identifier redeclaration - see isRedeclared AST node variable
+        2. Dynamic Array - bound identifiers aren't declared
+        3. Dynamic Array - bound identifiers aren't integers
+        4. Static Array - lower bound < upper bound 
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == declareStmt) {
         //printf("In declare stmt\n");
         astnode* idlist = root->children;
-        astnode* tmp = idlist->children;
+        astnode* itr = idlist->children;
 
-        while (tmp) {
-            char* id = tmp->data.T.lexeme;
-            symbolTableIdEntry* entry = NULL;
+        while (itr) {
+            char* id = itr->data.T.lexeme;
+            symbolTableIdEntry* entry = searchId(*currentIdTable, id);
 
             // found in current symbol table - but a redeclaration
-            if (tmp->isRedeclared == 1) {
+            if (itr->isRedeclared == 1) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Identifier %s at line %d has already been declared before\n", id, tmp->data.T.lineNo);
+                printf("Identifier %s at line %d has already been declared before.\n", id, itr->data.T.lineNo);
                 semanticError = 1;
             }
 
-            tmp = tmp->sibling;
+            // arrays - a first time declaration
+            else if (entry->AorP == 1) {
+                token lowerBound = entry->type.array.lowerBound;
+                token upperBound = entry->type.array.upperBound;
+                astnode* lb = root->children->sibling->children;
+                astnode* ub = root->children->sibling->children;
+
+                // static array
+                if (entry->type.array.dynamicArray == 0) {
+                    int lower = atoi(entry->type.array.lowerBound.lexeme);
+                    int upper = atoi(entry->type.array.upperBound.lexeme);
+
+                    // bounds not in increasing order 
+                    if (lower >= upper) {
+                        redColor();
+                        printf("Semantic Error: ");
+                        resetColor();
+                        printf("Lower bound %d is greater than upper bound %d at line number: %d.\n", lower, upper, itr->data.T.lineNo);
+                        semanticError = 1;
+                        *currentIdTable = removeId(*currentIdTable, id);
+                    }
+                }
+
+                // check if lower bound identifier declared
+                if (lowerBound.tid == ID) {
+                    idSymbolTable* tmp = currentIdTable;
+                    symbolTableIdEntry* boundEntry = NULL;
+                    char* boundId = lb->data.T.lexeme;
+
+                    while(1) {
+                        boundEntry = searchId(*tmp, boundId);
+
+                        // found in current scope
+                        if (boundEntry != NULL)
+                            break;
+                        
+                        // if reached global parent
+                        if (tmp->parent == NULL)
+                            break;
+                        
+                        // setting scope to parent scope
+                        tmp = tmp->parent;
+                    }
+
+                    // lower bound identifier not declared
+                    if (boundEntry == NULL) {
+                        redColor();
+                        printf("Semantic Error: ");
+                        resetColor();
+                        printf("Array bound %s has not been declared at line number: %d.\n", boundId, itr->data.T.lineNo);
+                        semanticError = 1;
+                        *currentIdTable = removeId(*currentIdTable, id);
+                    }
+
+                    // lower bound identifier not of integer data type
+                    else if (boundEntry->AorP != 0 || boundEntry->type.primitive.datatype.tid != INTEGER) {
+                        redColor();
+                        printf("Semantic Error: ");
+                        resetColor();
+                        printf("Array bound %s is not of integer type at line number: %d.\n", boundId, itr->data.T.lineNo);
+                        semanticError = 1;
+                        *currentIdTable = removeId(*currentIdTable, id);
+                    }
+                }
+
+                // check if upper bound identifier declared
+                if (upperBound.tid == ID) {
+                    idSymbolTable* tmp = currentIdTable;
+                    symbolTableIdEntry* boundEntry = NULL;
+                    char* boundId = ub->data.T.lexeme;
+
+                    while(1) {
+                        boundEntry = searchId(*tmp, boundId);
+
+                        // found in current scope
+                        if (boundEntry != NULL)
+                            break;
+                        
+                        // if reached global parent
+                        if (tmp->parent == NULL)
+                            break;
+                        
+                        // setting scope to parent scope
+                        tmp = tmp->parent;
+                    }
+
+                    // lower bound identifier not declared
+                    if (boundEntry == NULL) {
+                        redColor();
+                        printf("Semantic Error: ");
+                        resetColor();
+                        printf("Array bound %s has not been declared at line number: %d.\n", boundId, itr->data.T.lineNo);
+                        semanticError = 1;
+                        *currentIdTable = removeId(*currentIdTable, id);
+                    }
+
+                    // lower bound identifier not of integer data type
+                    else if (boundEntry->AorP != 0 || boundEntry->type.primitive.datatype.tid != INTEGER) {
+                        redColor();
+                        printf("Semantic Error: ");
+                        resetColor();
+                        printf("Array bound %s is not of integer type at line number: %d.\n", boundId, itr->data.T.lineNo);
+                        semanticError = 1;
+                        *currentIdTable = removeId(*currentIdTable, id);
+                    }
+                }
+            }
+
+            itr = itr->sibling;
         }
         //printf("Completed declare stmt\n");
     }
@@ -756,6 +927,7 @@ void semanticChecker(astnode* root) {
                 printf("Type Error: ");
                 resetColor();
                 printf("Case value type mismatch at line number: %d\n", tmp->data.T.lineNo);
+                //printf("%s vs %s", tmp->); //incomplete
                 semanticError = 1;
             }
             tmp = tmp->sibling;
@@ -773,13 +945,36 @@ void semanticChecker(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == FOR) {
         currentIdTable = &(root->scopeTable);
         astnode* id = root->children->sibling;
-        
-        // identifier not found in symbol table
-        semanticChecker(id);
-        // semanticError = 0;
+        idSymbolTable* tmp = currentIdTable;
+        symbolTableIdEntry* entry = NULL;
+
+        while(1) {
+             entry = searchId(*tmp, id->data.T.lexeme);
+
+            // found in current scope
+            if (entry != NULL)
+                break;
+            
+            // if reached global parent
+            if (tmp->parent == NULL)
+                break;
+            
+            // setting scope to parent scope
+            tmp = tmp->parent;
+        }
+
+        // not found in any symbol table
+        if (entry == NULL) {
+            redColor();
+            printf("Semantic Error: ");
+            resetColor();
+            printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, id->data.T.lineNo);
+            idFound = 0;
+            semanticError = 1;
+        }
 
         // loop variable isn't integer data type
-        if (id->datatype.tid != INTEGER) {
+        else if (entry->AorP != 0 || entry->type.primitive.datatype.tid != INTEGER) {
             redColor();
             printf("Type Error: ");
             resetColor();
@@ -787,6 +982,9 @@ void semanticChecker(astnode* root) {
             semanticError = 1;
         }
 
+         else 
+            entry->loopVariable = 1;
+        
         astnode* stmts = id->sibling->sibling;
         semanticChecker(stmts);
         currentIdTable = currentIdTable->parent;
@@ -801,7 +999,7 @@ void semanticChecker(astnode* root) {
         astnode* abexpr = root->children->sibling;
         semanticChecker(abexpr);
         
-        if (abexpr->datatype.tid != BOOLEAN) {
+        if (abexpr->datatype.tid != EPSILON && abexpr->datatype.tid != BOOLEAN) {
             redColor();
             printf("Type Error: ");
             resetColor();
@@ -809,7 +1007,6 @@ void semanticChecker(astnode* root) {
             semanticError = 1;
         }
         
-        exprError = 0;
         astnode* stmts = abexpr->sibling;
         semanticChecker(stmts);
         
@@ -846,7 +1043,7 @@ void semanticChecker(astnode* root) {
             redColor();
             printf("Semantic Error: ");
             resetColor();
-            printf("Identifier %s at line %d has not been declared.\n", id, root->data.T.lineNo);
+            printf("Identifier %s at line number %d has not been declared.\n", id, root->data.T.lineNo);
             idFound = 0;
             semanticError = 1;
         }
@@ -860,29 +1057,4 @@ void semanticChecker(astnode* root) {
 
         }
     }
-}
-
-
-int main (int argc, char* argv[]) {
-    parserfp = fopen("grammar.txt", "r");
-    readGrammar(parserfp);
-    fclose(parserfp);
-
-    computeFirstAndFollowSets();
-    initializeParseTree();
-    createParseTable();
-
-    fp = fopen(argv[1], "r");
-    if (fp == NULL)
-        printf("NULL");
-    getStream(fp);
-    parseInputSourceCode(argv[1]);
-    printParseTree(argv[2]);
-    fclose(fp);
-
-    createAST(parseTreeRoot);
-    printAST(parseTreeRoot->syn);
-    extractTypeAST(parseTreeRoot->syn);
-    printf("\nSemantic Checks: \n");
-    semanticChecker(parseTreeRoot->syn);
 }

@@ -34,6 +34,8 @@ typedef struct _symbolTableIdEntry {
     typeinfo type; // type
     int offset; 
     int AorP; // 1: array, 0: primitive
+    int isUpdated; // whether variable occurs in LHS of an assignment
+    int loopVariable; // whether it is a loop variable
 } symbolTableIdEntry;
 
 

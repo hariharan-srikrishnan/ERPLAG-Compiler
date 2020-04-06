@@ -13,6 +13,8 @@ idSymbolTable insertId(idSymbolTable table, symbolTableIdEntry entry);
 
 symbolTableIdEntry* searchId(idSymbolTable table, char* name);
 
+idSymbolTable removeId(idSymbolTable table, char* name);
+
 
 // for functions
 funcSymbolTable createFuncSymbolTable();

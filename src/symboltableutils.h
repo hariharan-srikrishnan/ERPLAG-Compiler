@@ -13,6 +13,8 @@ idLinkedList insertIdList(idLinkedList list, symbolTableIdEntry entry);
 
 symbolTableIdEntry* searchIdList(idLinkedList list, char* key);
 
+idLinkedList removeFromIdList(idLinkedList list, char* key);
+
 
 // for functions
 funcLinkedList createFuncLinkedList();

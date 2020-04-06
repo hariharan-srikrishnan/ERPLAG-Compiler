@@ -81,7 +81,7 @@ typedef enum {
 	NUM,
 	RNUM,
 	EPSILON,
-	ENDMARKER
+	ENDMARKER,
 } tokenid; 
 
 

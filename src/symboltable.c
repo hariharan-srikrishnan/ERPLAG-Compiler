@@ -53,6 +53,14 @@ symbolTableIdEntry* searchId(idSymbolTable table, char* name){
 }
 
 
+// remove an identifier from symbol table
+idSymbolTable removeId(idSymbolTable table, char* name) {
+    int hashValue = hashFunction(name, table.hashSize);
+    table.list[hashValue] = removeFromIdList(table.list[hashValue], name);
+    return table;
+}
+
+
 /* For function symbol table */
 
 // create an empty function symbol table
@@ -95,18 +103,15 @@ symbolTableFuncEntry* searchFunc(funcSymbolTable table, char* name){
 // int main() {
 //     idSymbolTable table = createIdSymbolTable();
 //     symbolTableIdEntry entrya;
-//     entrya.name = (char*) malloc(sizeof(char) * 25);
 //     strcpy(entrya.name, "A");
 //     table = insertId(table, entrya);
 
 //     symbolTableIdEntry entryb;
-//     entryb.name = (char*) malloc(sizeof(char) * 25);
 //     strcpy(entryb.name, "B");
 //     table = insertId(table, entryb);
 
 //     symbolTableIdEntry entryc;
-//     entryc.name = (char*) malloc(sizeof(char) * 25);
-//     strcpy(entryc.name, "B");
+//     strcpy(entryc.name, "C");
 //     table = insertId(table, entryc);
 
 //     symbolTableIdEntry* a = searchId(table, "A");
@@ -115,6 +120,22 @@ symbolTableFuncEntry* searchFunc(funcSymbolTable table, char* name){
 
 //     printf("%s\n",a->name);
 //     printf("%s\n",b->name);
+//     if (c)
+//         printf("%s\n",c->name);
+//     else 
+//         printf("NULL\n");
+
+//     table = removeId(table, "A");
+//     a = searchId(table, "A");
+//     if (a == NULL)
+//         printf("Deleted successfully!\n");
+
+//     table = removeId(table, "C");
+//     c = searchId(table, "C");
+//     if (c == NULL)
+//         printf("Deleted successfully!\n");
+
+//     c = searchId(table,"C");
 //     if (c)
 //         printf("%s\n",c->name);
 //     else 

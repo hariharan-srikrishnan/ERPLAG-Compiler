@@ -13,8 +13,6 @@ astnode* createASTNode(t_node* node) {
     newNode->data = node->data;
     newNode->children = NULL;
     newNode->sibling = NULL;
-    newNode->loopVariable = 0;
-    // newNode->isUpdated = 0;
     return newNode;
 }
 
@@ -363,11 +361,13 @@ void createAST(t_node* root) {
     // boolConstt -> TRUE
     else if (root->TorNT == 1 && root->data.NT.ntid == boolConstt && root->children->TorNT == 0 && root->children->data.T.tid == TRUE) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = BOOLEAN;
     }
 
     // boolConstt -> FALSE
     else if (root->TorNT == 1 && root->data.NT.ntid == boolConstt && root->children->TorNT == 0 && root->children->data.T.tid == FALSE) {
         root->syn = createASTNode(root->children);
+        root->syn->datatype.tid = BOOLEAN;
     }
 
     // var_id_num -> ID whichId
@@ -943,9 +943,6 @@ void createAST(t_node* root) {
         for_ast->syn->sibling = id_ast->syn;
         id_ast->syn->sibling = range_ast->syn;
         range_ast->syn->sibling = stmts_ast->syn;
-        
-        // ID is the loop variable
-        id_ast->syn->loopVariable = 1;
     }
     
     // iterativeStmt -> WHILE BO arithmeticOrBooleanExpr BC START statements END

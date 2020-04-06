@@ -72,6 +72,41 @@ symbolTableIdEntry* searchIdList(idLinkedList list, char* key) {
     return NULL;
 }
 
+// remove an identifier from the linked list
+idLinkedList removeFromIdList(idLinkedList list, char* key) {
+    idNode* tmp = list.head;
+
+    if (tmp == NULL)
+        return list;
+
+    // delete first element
+    if (strcmp(tmp->entry.name, key) == 0) {
+        list.head = tmp->next;
+        list.length--;
+        free(tmp);
+        return list;
+    }
+
+    idNode* prev = tmp;
+    tmp = tmp->next;
+    while(tmp) {
+
+        if (strcmp(tmp->entry.name, key) == 0) {
+            list.length--;
+            prev->next = tmp->next;
+            free(tmp);
+            return list;
+        }
+
+        else {
+            tmp = tmp->next;
+            prev = prev->next;
+        }
+    }
+    return list;
+}
+
+
 
 /* Functions Linked List - helper function */
 
