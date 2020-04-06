@@ -103,6 +103,9 @@ void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* id
 // semantic rules and type checking by traversing AST
 void semanticChecker(astnode* root) {
 
+    if (root == NULL)
+        return;
+
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
         currentIdTable = globalIdTable;
         astnode* tmp = root->children;

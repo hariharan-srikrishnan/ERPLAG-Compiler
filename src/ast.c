@@ -33,12 +33,24 @@ void createAST(t_node* root) {
         root->syn =  createASTNode(root);
         root->syn->children = md_ast->syn;
 
-        if (om_ast->syn == NULL) 
-            md_ast->syn->sibling = dm_ast->syn;
+        if (md_ast->syn == NULL) {
+            if (om_ast->syn == NULL) 
+                root->syn->children = dm_ast->syn;
+
+            else {
+                root->syn->children = om_ast->syn;
+                om_ast->syn->sibling = dm_ast->syn;
+            }
+        }
 
         else {
-            md_ast->syn->sibling = om_ast->syn;
-            om_ast->syn->sibling = dm_ast->syn;
+            if (om_ast->syn == NULL) 
+                md_ast->syn->sibling = dm_ast->syn;
+
+            else {
+                md_ast->syn->sibling = om_ast->syn;
+                om_ast->syn->sibling = dm_ast->syn;
+            }
         }
 
         dm_ast->syn->sibling = dm_ast->sibling->syn;
