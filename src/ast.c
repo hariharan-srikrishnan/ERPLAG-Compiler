@@ -13,6 +13,7 @@ astnode* createASTNode(t_node* node) {
     newNode->data = node->data;
     newNode->children = NULL;
     newNode->sibling = NULL;
+    newNode->entry = NULL;
     return newNode;
 }
 

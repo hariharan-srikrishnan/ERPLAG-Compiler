@@ -7,15 +7,12 @@
 #include "symboltableDef.h"
 #include "symboltable.h"
 
-// for testing
-#include "lexer.h"
-#include "parser.h"
-#include "parserutils.h"
 void traverseSymbolTable(idSymbolTable* table);
 
 
 idSymbolTable *currentIdTable, *globalIdTable;
 funcSymbolTable funcTable;
+int currentOffset = 0;
 
 
 // create a new entry in identifier symbol table
@@ -44,6 +41,16 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
         
         else 
             entry.type.array.datatype.width = 1;
+
+        // offset only assigned for static arrays
+        if (entry.type.array.dynamicArray == 0) {
+            entry.offset = currentOffset;
+
+            // new offset calculation
+            int lb = atoi(entry.type.array.lowerBound.lexeme);
+            int ub = atoi(entry.type.array.upperBound.lexeme);
+            currentOffset += (ub - lb - 1) * entry.type.array.datatype.width;
+        }
     }  
 
     else {
@@ -58,6 +65,10 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
         
         else 
             entry.type.primitive.width = 1;
+
+        // offset calculation
+        entry.offset = currentOffset;
+        currentOffset += entry.type.primitive.width;
     }
     return entry;
 }

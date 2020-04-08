@@ -7,6 +7,7 @@
 
 extern idSymbolTable *currentIdTable, *globalIdTable;
 extern funcSymbolTable funcTable;
+extern int currentOffset;
 
 // create an entry for ID symbol table
 symbolTableIdEntry createIdEntry(token id, astnode* type);
