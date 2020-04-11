@@ -40,7 +40,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
             entry.type.array.datatype.width = 8;
         
         else 
-            entry.type.array.datatype.width = 1;
+            entry.type.array.datatype.width = 4;
 
         // offset only assigned for static arrays
         if (entry.type.array.dynamicArray == 0) {
@@ -64,7 +64,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
             entry.type.primitive.width = 8;
         
         else 
-            entry.type.primitive.width = 1;
+            entry.type.primitive.width = 4;
 
         // offset calculation
         entry.offset = currentOffset;

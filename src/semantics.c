@@ -609,7 +609,7 @@ void semanticChecker(astnode* root) {
                 symbolTableIdEntry* entry = NULL;
 
                 while(1) {
-                    entry = searchId(*tmp, id);
+                    entry = searchId(*tmp, itr->data.T.lexeme);
 
                     // found in current scope
                     if (entry != NULL)
@@ -628,7 +628,7 @@ void semanticChecker(astnode* root) {
                     redColor();
                     printf("Semantic Error: ");
                     resetColor();
-                    printf("Identifier %s at line number %d has not been declared.\n", id, root->data.T.lineNo);
+                    printf("Identifier %s at line number %d has not been declared.\n", itr->data.T.lexeme, root->data.T.lineNo);
                     semanticError = 1;
                 }
                 
