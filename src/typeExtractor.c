@@ -30,17 +30,17 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
 
         // dynamic array
         if (type->sibling->children->data.T.tid == ID || type->sibling->children->sibling->data.T.tid == ID) 
-            entry.type.array.dynamicArray = 1;
+            entry.type.array.dynamicArray = 8;
 
         entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
         if (entry.type.array.datatype.datatype.tid == INTEGER)
-            entry.type.array.datatype.width = 4;
+            entry.type.array.datatype.width = 8;
 
         else if (entry.type.array.datatype.datatype.tid == REAL)
             entry.type.array.datatype.width = 8;
         
         else 
-            entry.type.array.datatype.width = 4;
+            entry.type.array.datatype.width = 8;
 
         // offset only assigned for static arrays
         if (entry.type.array.dynamicArray == 0) {
@@ -58,13 +58,13 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
         entry.type.primitive.datatype = type->data.T;
 
         if (entry.type.primitive.datatype.tid == INTEGER)
-            entry.type.primitive.width = 4;
+            entry.type.primitive.width = 8;
         
         else if (entry.type.primitive.datatype.tid == REAL)
             entry.type.primitive.width = 8;
         
         else 
-            entry.type.primitive.width = 4;
+            entry.type.primitive.width = 8;
 
         // offset calculation
         entry.offset = currentOffset;
@@ -167,6 +167,7 @@ void extractTypeAST(astnode* root) {
         linkTables(currentIdTable, &newIdTable);
         currentIdTable = &newIdTable;
         root->scopeTable = *currentIdTable;
+        currentOffset = 0;
         
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
@@ -192,6 +193,7 @@ void extractTypeAST(astnode* root) {
         linkTables(currentIdTable, &newIdTable);
         currentIdTable = &newIdTable;
         root->scopeTable = *currentIdTable;
+        currentOffset = 0;
 
         // add input parameters to identifier table and function parameters to function table
         astnode* identifier = root->children;

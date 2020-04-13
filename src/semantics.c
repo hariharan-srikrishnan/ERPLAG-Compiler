@@ -15,6 +15,7 @@ int idFound = 1;
 void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* idlist) {
     astnode* idItr = idlist->children;
     parameters* inputItr = param;
+    
 
     while (idItr) {
         idSymbolTable* tmp = currentIdTable;
