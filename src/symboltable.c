@@ -33,6 +33,7 @@ idSymbolTable deleteIdSymbolTable(idSymbolTable table){
     table.hashSize = 0;
     table.child = NULL;
     table.parent = NULL;
+    table.sibling = NULL;
     return table;
 }
 

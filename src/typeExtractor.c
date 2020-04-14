@@ -81,10 +81,13 @@ void linkTables (idSymbolTable* currentTable, idSymbolTable* newTable) {
         return;
     
     newTable->parent = currentTable;
-    if (currentTable->child == NULL)
+    if (currentTable->child == NULL) {
+        printf("in if case\n");
         currentTable->child = newTable;
+    }
 
     else {
+        printf("Something!\n");
         idSymbolTable* tmp = currentTable->child;
         while (tmp->sibling)
             tmp = tmp->sibling;
