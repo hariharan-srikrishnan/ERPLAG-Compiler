@@ -12,15 +12,15 @@ int hashTableSize = 13;
 /* For identifier symbol table */
 
 // create an empty identifier symbol table
-idSymbolTable createIdSymbolTable() {
-    idSymbolTable table;
-    table.hashSize = hashTableSize;
-    table.list = (idLinkedList*) malloc(sizeof(idLinkedList) * hashTableSize);
-    for (int i = 0; i < table.hashSize; i++) 
-        table.list[i] = createIdLinkedList();
-    table.child = NULL;
-    table.parent = NULL;
-    table.sibling = NULL;
+idSymbolTable* createIdSymbolTable() {
+    idSymbolTable* table = (idSymbolTable*) malloc(sizeof(idSymbolTable));
+    table->hashSize = hashTableSize;
+    table->list = (idLinkedList*) malloc(sizeof(idLinkedList) * hashTableSize);
+    for (int i = 0; i < table->hashSize; i++) 
+        table->list[i] = createIdLinkedList();
+    table->child = NULL;
+    table->parent = NULL;
+    table->sibling = NULL;
     return table;
 }
 

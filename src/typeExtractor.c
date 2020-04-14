@@ -31,7 +31,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
         // dynamic array
         if (type->sibling->children->data.T.tid == ID || type->sibling->children->sibling->data.T.tid == ID) 
             entry.type.array.dynamicArray = 8;
-
+        
         entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
         entry.type.array.datatype.width = 8;
 
@@ -81,13 +81,10 @@ void linkTables (idSymbolTable* currentTable, idSymbolTable* newTable) {
         return;
     
     newTable->parent = currentTable;
-    if (currentTable->child == NULL) {
-        printf("in if case\n");
+    if (currentTable->child == NULL) 
         currentTable->child = newTable;
-    }
 
     else {
-        printf("Something!\n");
         idSymbolTable* tmp = currentTable->child;
         while (tmp->sibling)
             tmp = tmp->sibling;
@@ -104,8 +101,8 @@ void extractTypeAST(astnode* root) {
 
     // program -> moduleDeclarations otherModules driverModule otherModules 
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
-        idSymbolTable firstTable = createIdSymbolTable();
-        currentIdTable = &firstTable;
+        idSymbolTable* firstTable = createIdSymbolTable();
+        currentIdTable = firstTable;
         globalIdTable = currentIdTable;
         funcTable = createFuncSymbolTable();
 
@@ -151,9 +148,9 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
         
         // create a new symbol table
-        idSymbolTable newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, &newIdTable);
-        currentIdTable = &newIdTable;
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
         root->scopeTable = *currentIdTable;
         currentOffset = 0;
         
@@ -177,9 +174,9 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == module) {
         
         // create a new symbol table
-        idSymbolTable newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, &newIdTable);
-        currentIdTable = &newIdTable;
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
         root->scopeTable = *currentIdTable;
         currentOffset = 0;
 
@@ -317,9 +314,9 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == conditionalStmt) {
 
         // create a new symbol table
-        idSymbolTable newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, &newIdTable);
-        currentIdTable = &newIdTable;
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
         root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling);
@@ -341,9 +338,9 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 1 && root->children->data.NT.ntid == FOR) {
 
         // create a new symbol table
-        idSymbolTable newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, &newIdTable);
-        currentIdTable = &newIdTable;
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
         root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling->sibling);
@@ -354,9 +351,9 @@ void extractTypeAST(astnode* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 1 && root->children->data.NT.ntid == WHILE) {
        
         // create a new symbol table
-        idSymbolTable newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, &newIdTable);
-        currentIdTable = &newIdTable;
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
         root->scopeTable = *currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling);

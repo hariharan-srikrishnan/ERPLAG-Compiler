@@ -241,11 +241,12 @@ void createAST(t_node* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == dataType && root->children->TorNT == 0 && root->children->data.T.tid == ARRAY) {
         t_node* arr_ast = root->children;
         t_node* ra_ast = arr_ast->sibling->sibling;
-        t_node* type_ast = ra_ast->sibling->sibling;
+        t_node* type_ast = ra_ast->sibling->sibling->sibling;
         createAST(ra_ast);
         createAST(type_ast);
 
         root->syn = createASTNode(root);
+        arr_ast->syn = createASTNode(arr_ast);
         root->syn->children = arr_ast->syn;
         arr_ast->syn->sibling = ra_ast->syn;
         ra_ast->syn->sibling = type_ast->syn; 

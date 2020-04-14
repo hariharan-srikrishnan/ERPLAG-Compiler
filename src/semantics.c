@@ -15,7 +15,6 @@ int idFound = 1;
 void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* idlist) {
     astnode* idItr = idlist->children;
     parameters* inputItr = param;
-    
 
     while (idItr) {
         idSymbolTable* tmp = currentIdTable;
@@ -285,7 +284,7 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, root->data.T.lineNo);
+                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, id->data.T.lineNo);
                 semanticError = 1;
                 return;
             }
@@ -603,7 +602,7 @@ void semanticChecker(astnode* root) {
         
         // parameters used to invoke function call should exist in symbol table (see optional rule of AST)
         if (opt != NULL) {
-            astnode* itr = opt->children;
+            astnode* itr = opt->children->children;
 
             while (itr) {
                 idSymbolTable* tmp = currentIdTable;
@@ -629,7 +628,7 @@ void semanticChecker(astnode* root) {
                     redColor();
                     printf("Semantic Error: ");
                     resetColor();
-                    printf("Identifier %s at line number %d has not been declared.\n", itr->data.T.lexeme, root->data.T.lineNo);
+                    printf("Identifier %s at line number %d has not been declared.\n", itr->data.T.lexeme, itr->data.T.lineNo);
                     semanticError = 1;
                 }
                 

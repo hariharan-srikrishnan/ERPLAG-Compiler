@@ -5,7 +5,7 @@
 
 
 // for identifiers
-idSymbolTable createIdSymbolTable();
+idSymbolTable* createIdSymbolTable();
 
 idSymbolTable deleteIdSymbolTable(idSymbolTable table);
 
