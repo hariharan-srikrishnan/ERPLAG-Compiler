@@ -23,12 +23,12 @@ void matchParameters(symbolTableFuncEntry* entry, parameters* param, astnode* id
         idSymbolTable relevantTable = entry->link;
         symbolTableIdEntry* inputEntry = searchId(relevantTable, inputItr->id.lexeme);
 
-        if (inputEntry->isShadowed == 1) {
-            char* actualName = (char*) malloc(sizeof(char) * 25);
-            sprintf(actualName, "_%s", inputEntry->name);
-            inputEntry = searchId(relevantTable, actualName);
-            free(actualName);
-        }
+        // if (inputEntry->isShadowed == 1) {
+        //     char* actualName = (char*) malloc(sizeof(char) * 25);
+        //     sprintf(actualName, "_%s", inputEntry->name);
+        //     inputEntry = searchId(relevantTable, actualName);
+        //     free(actualName);
+        // }
 
         while (1) {
             idEntry = searchId(*tmp, idItr->data.T.lexeme);
@@ -301,9 +301,9 @@ void semanticChecker(astnode* root) {
         2. Bound check for arrays
     */
     else if (root->TorNT == 1 && root->data.NT.ntid == ioStmt && root->children->TorNT == 0 && root->children->data.T.tid == PRINT) {
-        
+
         // check if array or not
-        if (root->TorNT == 0 && root->children->sibling->children->data.T.tid == ID) {
+        if (root->children->sibling->children->TorNT == 0 && root->children->sibling->children->data.T.tid == ID) {
             
             astnode* id_ast = root->children->sibling->children;
             // not an array 
@@ -311,7 +311,6 @@ void semanticChecker(astnode* root) {
                 
                 // identifier
                 semanticChecker(id_ast);
-                // semanticError = 0;
             }
 
             else {

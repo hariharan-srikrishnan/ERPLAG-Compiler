@@ -312,18 +312,18 @@ void extractTypeAST(astnode* root) {
             }
             
             // input parameter, needs to be shadowed
-            else if (entry->isInputParam == 1) {
-                symbolTableIdEntry* entry = searchId(*currentIdTable, tmp->data.T.lexeme);
-                *currentIdTable = removeId(*currentIdTable, tmp->data.T.lexeme);
-                sprintf(entry->name, "_%s", tmp->data.T.lexeme);
-                sprintf(entry->id.lexeme, "_%s", tmp->data.T.lexeme);
-                *currentIdTable = insertId(*currentIdTable, *entry);
+            // else if (entry->isInputParam == 1) {
+            //     symbolTableIdEntry* existingEntry = searchId(*currentIdTable, tmp->data.T.lexeme);
+            //     *currentIdTable = removeId(*currentIdTable, tmp->data.T.lexeme);
+            //     sprintf(existingEntry->name, "_%s", tmp->data.T.lexeme);
+            //     sprintf(existingEntry->id.lexeme, "_%s", tmp->data.T.lexeme);
+            //     *currentIdTable = insertId(*currentIdTable, *existingEntry);
 
-                symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
-                newEntry.isShadowed = 1;
-                tmp->datatype = datatypenode->data.T;
-                *currentIdTable = insertId(*currentIdTable, newEntry);
-            }
+            //     symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
+            //     newEntry.isShadowed = 1;
+            //     tmp->datatype = datatypenode->data.T;
+            //     *currentIdTable = insertId(*currentIdTable, newEntry);
+            // }
 
             // redeclaration
             else {
@@ -403,7 +403,7 @@ void printSymbolTable(idSymbolTable* table) {
     
     // make the format ready
     if (table == globalIdTable)
-        printf("\tVariable Name\t")
+        printf("\tVariable Name\t");
 }
 
 

@@ -8,6 +8,6 @@ extern int num_temps;
 char* generateTemporary(astnode* root);
 
 // traverse AST to generate assembly code
-void generateASM(astnode* root, FILE* fp);
+void generateASM(astnode* root);
 
 #endif

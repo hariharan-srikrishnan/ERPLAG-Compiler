@@ -126,6 +126,7 @@ void generateASM(astnode* root) {
         fprintf(asmFile, "\tXOR RAX, RAX\n");
         fprintf(asmFile, "\tCALL printf\n");
         fprintf(asmFile, "\tMOV RAX, 60\n");
+        fprintf(asmFile, "\tXOR RDI, RDI\n");
         fprintf(asmFile, "\tSYSCALL\n");
         fprintf(asmFile, "\n\n");
 
@@ -147,7 +148,7 @@ void generateASM(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
-        currentIdTable = &(root->scopeTable);
+        currentIdTable = root->scopeTable;
         currentOffset = 0;
 
         fprintf(asmFile, "main: \n");
@@ -182,7 +183,7 @@ void generateASM(astnode* root) {
             moduledef = ret_ast->sibling;
         }
 
-        currentIdTable = &(root->scopeTable);
+        currentIdTable = root->scopeTable;
         currentOffset = 0;
         symbolTableFuncEntry* entry = searchFunc(funcTable, funcName->data.T.lexeme);
 
@@ -392,25 +393,25 @@ void generateASM(astnode* root) {
         if (entry->AorP == 0) {
 
             if (entry->type.primitive.datatype.tid == INTEGER)
-                fprintf(asmFile, "\tMOV RDI, intMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [intMessage]\n");
             
             else if (entry->type.primitive.datatype.tid == BOOLEAN)
-                fprintf(asmFile, "\tMOV RDI, boolMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [boolMessage]\n");
 
             else 
-                fprintf(asmFile, "\tMOV RDI, realMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
             
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL printf\n");
 
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d\n", entry->offset);
 
             if (entry->type.primitive.datatype.tid == INTEGER || entry->type.primitive.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerRead\n");
+                fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
 
             else 
-                fprintf(asmFile, "\tMOV RDI, realRead\n");
+                fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d]\n", entry->offset);
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL scanf\n");
         }
@@ -428,13 +429,13 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tMOV RDX, %d\n", ub);
 
              if (entry->type.primitive.datatype.tid == INTEGER) 
-                fprintf(asmFile, "\tMOV RDI, intArrMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [intArrMessage]\n");
             
             else if (entry->type.primitive.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, boolArrMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [boolArrMessage]\n");
 
             else 
-                fprintf(asmFile, "\tMOV RDI, realMessage\n");
+                fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -444,13 +445,13 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, %d\n", ub);
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d - R9W * %d\n", entry->offset, width);
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R9W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerRead\n");
+                fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
 
             else if (entry->type.array.datatype.datatype.tid == REAL) 
-                fprintf(asmFile, "\tMOV RDI, realRead\n");
+                fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL scanf\n");
@@ -516,13 +517,13 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, R9W\n");
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d - R10W * %d\n", entry->offset, width);
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R10W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerRead\n");
+                fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
 
             else if (entry->type.array.datatype.datatype.tid == REAL) 
-                fprintf(asmFile, "\tMOV RDI, realRead\n");
+                fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL scanf\n");
@@ -534,18 +535,18 @@ void generateASM(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == ioStmt && root->children->TorNT == 0 && root->children->data.T.tid == PRINT) {
-         symbolTableIdEntry* entry = root->children->sibling->entry;
+        symbolTableIdEntry* entry = root->children->sibling->children->entry;
 
         // primitive datatype
         if (entry->AorP == 0) {
             
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d\n", entry->offset);
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d]\n", entry->offset);
 
             if (entry->type.primitive.datatype.tid == INTEGER || entry->type.primitive.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
             
             else if (entry->type.primitive.datatype.tid == REAL) 
-                fprintf(asmFile, "\tMOV RDI, realWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -565,13 +566,13 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, %d\n", ub);
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d - R9W * %d\n", entry->offset, width);
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R9W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
 
             else 
-                fprintf(asmFile, "\tMOV RDI, realWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -637,13 +638,13 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, R9W\n");
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tMOV RSI, RBP - 16 - %d - R10W * %d\n", entry->offset, width);
+            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R10W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tMOV RDI, integerWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
 
             else if (entry->type.array.datatype.datatype.tid == REAL) 
-                fprintf(asmFile, "\tMOV RDI, realWrite\n");
+                fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
             fprintf(asmFile, "\tXOR RAX, RAX\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -666,6 +667,7 @@ void generateASM(astnode* root) {
         if (id->sibling->TorNT == 1 && id->sibling->data.NT.ntid == lvalueIDStmt) {
             astnode* expr = id->sibling->children;
             generateASM(expr);
+            printf("%s, %s\n", expr->data.T.lexeme, expr->children->data.T.lexeme);
 
             if (id->entry->AorP == 0) {
                 fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", expr->entry->offset);
@@ -899,7 +901,7 @@ void generateASM(astnode* root) {
         }
 
         astnode* idlist = functionName->sibling;
-        currentIdTable = &(functionName->scopeTable);
+        currentIdTable = functionName->scopeTable;
 
         symbolTableFuncEntry* entry = searchFunc(funcTable, functionName->data.T.lexeme);
 
@@ -1003,7 +1005,7 @@ void generateASM(astnode* root) {
                 fprintf(asmFile, "%s: \n", label);
                 fprintf(asmFile, "\tCMP R8W, R9W\n");
                 fprintf(asmFile, "\tJG %s\n", exitLabel);
-                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d - %d * R10W]\n", idEntry->entry->offset, width);
+                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d - %d * R10W]\n", idEntry->offset, width);
 
                 fprintf(asmFile, "\tINC R8W\n");
                 fprintf(asmFile, "\tINC R10W\n");
@@ -1024,7 +1026,7 @@ void generateASM(astnode* root) {
             symbolTableIdEntry* idEntry = NULL;
 
             while (1) {
-                idEntry = searchId(*itr, tmp->id.lexeme);
+                idEntry = searchId(*itr, tmp->data.T.lexeme);
 
                 if (idEntry != NULL)
                     break;
@@ -1111,7 +1113,7 @@ void generateASM(astnode* root) {
                 fprintf(asmFile, "%s: \n", label);
                 fprintf(asmFile, "\tCMP R8W, R9W\n");
                 fprintf(asmFile, "\tJG %s\n", exitLabel);
-                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d - %d * R10W]\n", idEntry->entry->offset, width);
+                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d - %d * R10W]\n", idEntry->offset, width);
 
                 fprintf(asmFile, "\tINC R8W\n");
                 fprintf(asmFile, "\tINC R10W\n");
@@ -1133,7 +1135,7 @@ void generateASM(astnode* root) {
             symbolTableIdEntry* idEntry = NULL;
 
             while (1) {
-                idEntry = searchId(*itr, tmp->id.lexeme);
+                idEntry = searchId(*itr, tmp->data.T.lexeme);
 
                 if (idEntry != NULL)
                     break;
@@ -1258,11 +1260,11 @@ void generateASM(astnode* root) {
                     fprintf(asmFile, "\tMOVQ  QWORD [RBP - 16 - %d], XMM0\n", tmp->sibling->entry->offset);
                 }
             }
+        }
 
-            else {
-                generateASM(tmp);
-                root->entry = tmp->entry;
-            }
+        else {
+            generateASM(tmp);
+            root->entry = tmp->entry;
         }
     }
         
@@ -1316,7 +1318,7 @@ void generateASM(astnode* root) {
 
             if (root->datatype.tid == INTEGER) {
                 fprintf(asmFile, "\tMOV   RAX, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset); 
-                fprintf(asmFile, "\tIMULQ QWORD [RBP - 16 - %d]\n", rightchild->entry->offset); 
+                fprintf(asmFile, "\tIMUL QWORD [RBP - 16 - %d]\n", rightchild->entry->offset); 
                 fprintf(asmFile, "\tMOV   QWORD [RBP - 16 - %d], RAX\n", root->entry->offset); 
             } 
 
@@ -1433,7 +1435,7 @@ void generateASM(astnode* root) {
     
     // treating integer and boolean the same way
     else if (root->TorNT == 1 && root->data.NT.ntid == conditionalStmt) {
-        currentIdTable = &(root->scopeTable);
+        currentIdTable = root->scopeTable;
         astnode* id = root->children;
         astnode* caseStatements = id->sibling;
         astnode* default_ast = caseStatements->sibling;
@@ -1480,7 +1482,7 @@ void generateASM(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == FOR) {
-        currentIdTable = &(root->scopeTable);
+        currentIdTable = root->scopeTable;
         astnode* id = root->children->sibling;
         astnode* range_ast = root->children->sibling->sibling;
         astnode* stmts = root->children->sibling->sibling->sibling;
@@ -1504,7 +1506,7 @@ void generateASM(astnode* root) {
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.T.tid == WHILE) {
-        currentIdTable = &(root->scopeTable);
+        currentIdTable = root->scopeTable;
         astnode* abexpr = root->children->sibling;
         astnode* stmts = abexpr->sibling;
 
@@ -1532,7 +1534,7 @@ void generateASM(astnode* root) {
 
     else if (root->TorNT == 0  && root->data.T.tid == RNUM) {
         char* tmp = generateTemporary(root);
-        fprintf(asmFile, "\tMOV RAX, %ld\n", atof(root->data.T.lexeme)); 
+        fprintf(asmFile, "\tMOV RAX, %f\n", atof(root->data.T.lexeme)); 
         fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", root->entry->offset); 
     }
 
