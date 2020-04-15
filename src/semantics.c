@@ -453,6 +453,45 @@ void semanticChecker(astnode* root) {
                 resetColor();
                 printf("Assignment type mismatch at line number: %d.\n", id->data.T.lineNo);
                 semanticError = 1;
+            }
+
+            // both are arrays - it can only be a direct assignment
+            else if (entry->AorP == 1 && expr->datatype.tid == ARRAY && entry->type.array.dynamicArray == 0) {
+                char* rhs = expr->children->data.T.lexeme;
+                idSymbolTable* tmp = currentIdTable;
+                symbolTableIdEntry* exprEntry = NULL; 
+
+                while (1) {
+                    exprEntry = searchId(*tmp, rhs);
+                    
+                    // found in the symbol table
+                    if (exprEntry != NULL)
+                        break;
+                    
+                    // not found in global symbol table as well
+                    if (tmp->parent == NULL)
+                        break;
+                    tmp = tmp->parent;
+                }
+
+                // can perform bound check
+                if (exprEntry->type.array.dynamicArray == 0) {
+                    int lb1 = atoi(entry->type.array.lowerBound.lexeme);
+                    int ub1 = atoi(entry->type.array.upperBound.lexeme);
+                    int length1 = ub1 - lb1;
+
+                    int lb2 = atoi(exprEntry->type.array.lowerBound.lexeme);
+                    int ub2 = atoi(exprEntry->type.array.upperBound.lexeme);
+                    int length2 = ub2 - lb2;
+
+                    if (length1 != length2) {
+                        redColor();
+                        printf("Type Error: ");
+                        resetColor();
+                        printf("Array assignment mismatch at line number: %d.\n", id->data.T.lineNo);
+                        semanticError = 1;
+                    } 
+                }
             }  
         }
 
@@ -744,10 +783,10 @@ void semanticChecker(astnode* root) {
             redColor();
             printf("Type Error: ");
             resetColor();
-            printf("Type mismatch at line number_2: %d.\n", root->data.T.lineNo);
+            printf("Type mismatch at line number: %d.\n", root->data.T.lineNo);
             semanticError = 1;
             root->datatype.tid = EPSILON;
-        }//r:= b+q*a+x < 100 AND w OR m
+        }
     }
 
     /*
@@ -946,7 +985,7 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Must contain default statement at line number: %d\n", id->data.T.lineNo);
+                printf("Must contain default statement in switch case at line number: %d\n", id->data.T.lineNo);
                 semanticError = 1;
             }
         }
@@ -958,7 +997,7 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Must not contain default statement at line number: %d\n", id->data.T.lineNo);
+                printf("Must not contain default statement at line number: %d\n", default_ast->startLineNo);
                 semanticError = 1;
             }
         }
@@ -991,6 +1030,7 @@ void semanticChecker(astnode* root) {
                 resetColor();
                 printf("Case value type mismatch at line number: %d\n", tmp->data.T.lineNo);
                 semanticError = 1;
+                return;
             }
             tmp = tmp->sibling;
             semanticChecker(tmp);
@@ -1174,7 +1214,7 @@ void semanticChecker(astnode* root) {
                     redColor();
                     printf("Type Error: ");
                     resetColor();
-                    printf("Identifier %s bound mismatch - %d out of bounds at line number: %d.\n", root->data.T.lexeme, indice, root->data.T.lineNo);
+                    printf("Identifier %s bound mismatch - %d out of bounds at line number: %d.\n", root->children->data.T.lexeme, indice, root->children->data.T.lineNo);
                     semanticError = 1;
                 }
 

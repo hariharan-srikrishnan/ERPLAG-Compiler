@@ -950,6 +950,9 @@ void createAST(t_node* root) {
 
         root->syn = createASTNode(root);
         root->syn->children = stmts_ast->syn;
+        
+        root->syn->startLineNo = root->children->data.T.lineNo;
+        root->syn->endLineNo = stmts_ast->sibling->data.T.lineNo;
     }
 
     // default -> EPSILON 
