@@ -48,8 +48,18 @@ idSymbolTable insertId(idSymbolTable table, symbolTableIdEntry entry){
 
 // symbol table lookup
 symbolTableIdEntry* searchId(idSymbolTable table, char* name){
+    // int asd = table.hashSize;
+    // printf("%d",asd);
     int hashValue = hashFunction(name, table.hashSize);
+    printf("insidesearch\t");
     symbolTableIdEntry* entry = searchIdList(table.list[hashValue], name);
+    if (entry == NULL)
+        printf("not found\n");
+    else
+    {
+        printf("found\n");
+    }
+    
     return entry;
 }
 

@@ -36,6 +36,8 @@ typedef struct _symbolTableIdEntry {
     int AorP; // 1: array, 0: primitive
     int isUpdated; // whether variable occurs in LHS of an assignment
     int loopVariable; // whether it is a loop variable
+    int isInputParam; // is it an input parameter
+    int isShadowed; // is input param shadowed
 } symbolTableIdEntry;
 
 

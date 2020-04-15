@@ -390,9 +390,18 @@ void createAST(t_node* root) {
         t_node* whichid_ast = id_ast->sibling;
         createAST(whichid_ast);
 
-        id_ast->syn = createASTNode(id_ast);
-        id_ast->syn->sibling = whichid_ast->syn;
-        root->syn = id_ast->syn;
+        if (whichid_ast->syn == NULL) {
+            id_ast->syn = createASTNode(id_ast);
+            id_ast->syn->sibling = whichid_ast->syn;
+            root->syn = id_ast->syn;
+        }
+
+        else {
+            root->syn = createASTNode(root);
+            id_ast->syn = createASTNode(id_ast);
+            root->syn->children = id_ast->syn;
+            id_ast->syn->sibling = whichid_ast->syn;
+        }
     }
     
     // var_id_num -> NUM
@@ -426,7 +435,7 @@ void createAST(t_node* root) {
     }
 
     // whichId -> SQBO index SQBC
-    else if (root->TorNT == 1 && root->data.NT.ntid == var_id_num && root->children->TorNT == 0 && root->children->data.T.tid == SQBO) {
+    else if (root->TorNT == 1 && root->data.NT.ntid == whichId && root->children->TorNT == 0 && root->children->data.T.tid == SQBO) {
         t_node* index_ast = root->children->sibling;
         createAST(index_ast);
         root->syn = index_ast->syn;
@@ -709,7 +718,6 @@ void createAST(t_node* root) {
     else if (root->TorNT == 1 && root->data.NT.ntid == N8 && root->children->TorNT == 0 && root->children->data.T.tid == EPSILON) {
         root->syn = root->inh;
     }
-
 
     // arithmeticExpr -> term N4
     else if (root->TorNT == 1 && root->data.NT.ntid == arithmeticExpr) {

@@ -20,6 +20,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
     symbolTableIdEntry entry;
     entry.id = id;
     strcpy(entry.name, id.lexeme);
+    entry.isInputParam = 0;
 
     if (type->TorNT == 0 && type->data.T.tid == ARRAY) {
         entry.AorP = 1;
@@ -210,6 +211,7 @@ void extractTypeAST(astnode* root) {
             numInputParams++;
 
             idEntry = createIdEntry(curr->id, datatypenode);
+            idEntry.isInputParam = 1;
             *currentIdTable = insertId(*currentIdTable, idEntry);
         }
 
@@ -297,6 +299,20 @@ void extractTypeAST(astnode* root) {
             // identifier has not been declared before in current scope
             if (entry == NULL) {
                 symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
+                tmp->datatype = datatypenode->data.T;
+                *currentIdTable = insertId(*currentIdTable, newEntry);
+            }
+            
+            // input parameter, needs to be shadowed
+            else if (entry->isInputParam == 1) {
+                symbolTableIdEntry* entry = searchId(*currentIdTable, tmp->data.T.lexeme);
+                *currentIdTable = removeId(*currentIdTable, tmp->data.T.lexeme);
+                sprintf(entry->name, "_%s", tmp->data.T.lexeme);
+                sprintf(entry->id.lexeme, "_%s", tmp->data.T.lexeme);
+                *currentIdTable = insertId(*currentIdTable, *entry);
+
+                symbolTableIdEntry newEntry = createIdEntry(tmp->data.T, datatypenode);
+                newEntry.isShadowed = 1;
                 tmp->datatype = datatypenode->data.T;
                 *currentIdTable = insertId(*currentIdTable, newEntry);
             }
