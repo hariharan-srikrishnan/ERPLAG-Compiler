@@ -6,6 +6,12 @@
 #include "ast.h"
 
 
+unsigned long long int parseTreeSize = 0;
+unsigned long long int astSize = 0;
+int parseTreeNodes = 0;
+int astNodes = 0;
+
+
 // helper to create new AST node
 astnode* createASTNode(t_node* node) {
     astnode* newNode = (astnode*) malloc(sizeof(astnode));
@@ -1013,6 +1019,38 @@ void createAST(t_node* root) {
         // not really needed here - but just for consistency
         num_1->syn->datatype.tid = INTEGER;
         num_2->syn->datatype.tid = INTEGER;
+    }
+}
+
+
+// compute size of parseTree
+void computeParseTreeSize(t_node* root) {
+
+    if (root == NULL)
+        return;
+    
+    parseTreeSize += sizeof(root);
+    parseTreeNodes++;
+    t_node* tmp = root->children;
+    while (tmp) {
+        computeParseTreeSize(tmp);
+        tmp = tmp->sibling;
+    }
+}
+
+
+// compute size of AST
+void computeASTSize(astnode* root) {
+
+    if (root == NULL)
+        return;
+
+    astSize += sizeof(root);
+    astNodes++;
+    astnode* tmp = root->children;
+    while (tmp) {
+        computeASTSize(tmp);
+        tmp = tmp->sibling;
     }
 }
 

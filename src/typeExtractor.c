@@ -7,7 +7,7 @@
 #include "symboltableDef.h"
 #include "symboltable.h"
 
-void traverseSymbolTable(idSymbolTable* table);
+// void traverseSymbolTable(idSymbolTable* table);
 
 
 idSymbolTable *currentIdTable, *globalIdTable;
@@ -395,25 +395,38 @@ void extractTypeAST(astnode* root) {
 }
 
 
-// traverse current and all children symbol tables
-void traverseSymbolTable(idSymbolTable* curr) {
-    if (curr == NULL)
+// print the symbol table
+void printSymbolTable(idSymbolTable* table) {
+    
+    if (table == NULL) 
         return;
-
-    for (int i = 0; i < curr->hashSize; i++) {
-        idNode* tmp = curr->list[i].head;
-        while (tmp) {
-            printf("\t%s %s\n", tmp->entry.name, tmp->entry.type.primitive.datatype.lexeme);
-            tmp = tmp->next;
-        }
-    }
-    idSymbolTable* tmp = curr->child;
-    while (tmp) {
-        printf("\n");
-        traverseSymbolTable(tmp);
-        tmp = tmp->sibling;
-    }
+    
+    // make the format ready
+    if (table == globalIdTable)
+        printf("\tVariable Name\t")
 }
+
+
+
+// // traverse current and all children symbol tables
+// void traverseSymbolTable(idSymbolTable* curr) {
+//     if (curr == NULL)
+//         return;
+
+//     for (int i = 0; i < curr->hashSize; i++) {
+//         idNode* tmp = curr->list[i].head;
+//         while (tmp) {
+//             printf("\t%s %s\n", tmp->entry.name, tmp->entry.type.primitive.datatype.lexeme);
+//             tmp = tmp->next;
+//         }
+//     }
+//     idSymbolTable* tmp = curr->child;
+//     while (tmp) {
+//         printf("\n");
+//         traverseSymbolTable(tmp);
+//         tmp = tmp->sibling;
+//     }
+// }
 
 
 // print function symbol table
@@ -448,6 +461,5 @@ void printFunctionTable(funcSymbolTable table) {
 //     createAST(parseTreeRoot);
 //     printAST(parseTreeRoot->syn);
 //     extractTypeAST(parseTreeRoot->syn);
-//     traverseSymbolTable(globalIdTable);
 //     printFunctionTable(funcTable);
 // }

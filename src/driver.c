@@ -10,14 +10,159 @@ Praveen Ravirathinam   - 2017A7PS1174P
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "hash.h"
 #include "lexer.h"
 #include "lexerDef.h"
 #include "parserDef.h"
 #include "parser.h"
 #include "parserutils.h"
+#include "ast.h"
+#include "symboltableutils.h"
+#include "symboltableDef.h"
+#include "symboltable.h"
+#include "typeExtractor.h"
+#include "semantics.h"
+#include "codegen.h"
 
 
+
+int main (int argc, char* argv[]) {
+	int choice;
+	magentaColor();
+	printf("Project status: \n");
+	resetColor();
+
+	/* FILL PROJECT STATUS ETC HERE!!!!! */
+	if (argc != 3) {
+		printf("Number of arguments don't match\n");
+		exit(0);
+	}
+ 
+	// need to read grammar only once
+	int grammarRead = 0;
+
+	do {
+		printf("Please enter your choice:\n");
+		scanf("%d", &choice);
+		switch(choice) {
+			// exit
+			case 0: exit(0);
+
+			// print token list on console
+			case 1: fp = fopen(argv[1], "r");
+					getStream(fp);
+					token tk;
+					while(1) {
+						tk = getNextToken();
+						if (tk.tid == ENDMARKER)
+							break;
+
+						printf("Line Number: %d  Lexeme: %s  Token Name: %s\n", tk.lineNo, tk.lexeme, getTerminalName(tk.tid));
+					}
+					fclose(fp);
+					lineno = 1;
+					break;
+			
+			// parse source code
+			case 2: if(!grammarRead) {
+						parserfp = fopen("grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+					
+					computeFirstAndFollowSets();
+					initializeParseTree();
+					createParseTable();
+
+					fp = fopen(argv[1], "r");
+					getStream(fp);
+					parseInputSourceCode(argv[1]);
+					fclose(fp);
+					lineno = 1;
+					break;
+			
+			// AST traversal
+			case 3: if(!grammarRead) {
+						parserfp = fopen("grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+					
+					computeFirstAndFollowSets();
+					initializeParseTree();
+					createParseTable();
+
+					fp = fopen(argv[1], "r");
+					getStream(fp);
+					parseInputSourceCode(argv[1]);
+					fclose(fp);
+
+					printf("Traversal order: \n");
+					createAST(parseTreeRoot);
+					printAST(parseTreeRoot->syn);
+					lineno = 1;
+					break;
+			
+			// PT and AST memory 
+			case 4: if(!grammarRead) {
+						parserfp = fopen("grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+					
+					computeFirstAndFollowSets();
+					initializeParseTree();
+					createParseTable();
+
+					fp = fopen(argv[1], "r");
+					getStream(fp);
+					parseInputSourceCode(argv[1]);
+					fclose(fp);
+
+					createAST(parseTreeRoot);
+					computeParseTreeSize(parseTreeRoot);
+					computeASTSize(parseTreeRoot->syn);
+
+					printf("Number of Parse Tree Nodes: %d \t Memory: %llu\n", parseTreeNodes, parseTreeSize);
+					printf("Number of AST Nodes: %d \t Memory: %llu\n", astNodes, astSize);
+
+					double compressionRatio = (parseTreeSize - astSize) * 100.0 / parseTreeSize
+					printf("Compression Ratio: 100 * (%d - %d) / %d = %d", parseTreeSize, astSize, parseTreeSize, compressionRatio);
+					lineno = 1;
+					break;
+			
+			
+			// symbol table
+			case 5: if(!grammarRead) {
+						parserfp = fopen("grammar.txt", "r");
+						readGrammar(parserfp);
+						fclose(parserfp);
+						grammarRead = 1;
+					}
+					
+					computeFirstAndFollowSets();
+					initializeParseTree();
+					createParseTable();
+
+					fp = fopen(argv[1], "r");
+					getStream(fp);
+					parseInputSourceCode(argv[1]);
+					fclose(fp);
+
+					createAST(parseTreeRoot);
+					extractTypeAST(parseTreeRoot->syn);
+					
+		}
+	}
+
+}
+
+
+/* STAGE 1: DRIVER */
 int main(int argc, char* argv[]) {
 	int choice;
 	magentaColor();

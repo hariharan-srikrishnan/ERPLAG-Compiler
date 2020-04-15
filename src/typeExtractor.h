@@ -22,7 +22,7 @@ void extractTypeAST(astnode* root);
 void linkTables (idSymbolTable* currentTable, idSymbolTable* newTable);
 
 // traverse all identifier symbol tables until global symbol table
-void traverseSymbolTable(idSymbolTable* curr);
+// void traverseSymbolTable(idSymbolTable* curr);
 
 // print the function symbol table
 void printFunctionTable(funcSymbolTable table);

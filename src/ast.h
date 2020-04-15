@@ -4,6 +4,12 @@
 #include "parserutils.h"
 #include "symboltableDef.h"
 
+extern unsigned long long int parseTreeSize;
+extern int parseTreeNodes;
+extern unsigned long long int astSize;
+extern int astNodes;
+
+
 union _treeData;
 typedef union _treeData treeData;
 
@@ -25,6 +31,13 @@ astnode* createASTNode(t_node* node);
 
 // traverse parse tree root to generate AST
 void createAST(t_node* root);
+
+
+// find memory usage of parse tree
+void computeParseTreeSize(t_node* root);
+
+// find memory usage of AST
+void computeASTSize(astnode* root);
 
 // print AST structure
 void printAST(astnode* root);

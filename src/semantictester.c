@@ -14,23 +14,23 @@
 
 // Args: input text file, parseTree output text file
 int main (int argc, char* argv[]) {
-    parserfp = fopen("grammar.txt", "r");
+    parserfp = fopen("../grammar.txt", "r");
     readGrammar(parserfp);
     fclose(parserfp);
 
+    fp = fopen(argv[1], "r");
+    getStream(fp);
     computeFirstAndFollowSets();
     initializeParseTree();
     createParseTable();
-
-    fp = fopen(argv[1], "r");
-    if (fp == NULL)
-        printf("NULL");
-    getStream(fp);
     parseInputSourceCode(argv[1]);
-    printParseTree(argv[2]);
+
+    if (!syntaxError)
+        printParseTree(argv[2]);
+    
     fclose(fp);
 
-    if (syntaxError == 0) {
+    if (!syntaxError) {
         createAST(parseTreeRoot);
         // printAST(parseTreeRoot->syn);
         extractTypeAST(parseTreeRoot->syn);
