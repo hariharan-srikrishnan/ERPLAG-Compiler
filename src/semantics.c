@@ -411,7 +411,7 @@ void semanticChecker(astnode* root) {
                 redColor();
                 printf("Semantic Error: ");
                 resetColor();
-                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, root->data.T.lineNo);
+                printf("Identifier %s at line number %d has not been declared.\n", id->data.T.lexeme, id->data.T.lineNo);
                 semanticError = 1;
                 idFound = 1;
                 return;
