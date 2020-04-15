@@ -403,7 +403,7 @@ void printSymbolTable(idSymbolTable* table) {
     
     // make the format ready
     if (table == globalIdTable)
-        printf("\tVariable Name\t")
+        printf("\tVariable Name\t");
 }
 
 
