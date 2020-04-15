@@ -13,9 +13,10 @@ typedef struct _astnode {
     token datatype; // for type-check
     struct _astnode* children;
     struct _astnode* sibling;
-    idSymbolTable scopeTable; // corresponding symbol table for relevant node (functions)
+    idSymbolTable* scopeTable; // corresponding symbol table for relevant node (functions)
     int isRedeclared; // whether identifier has already been declared before
     symbolTableIdEntry* entry; // corresponding symbol table entry for arithmetic expressions
+    int startLineNo, endLineNo; // for scope information
 } astnode;
 
 

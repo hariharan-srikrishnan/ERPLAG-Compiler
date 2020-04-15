@@ -30,11 +30,13 @@ int main (int argc, char* argv[]) {
     printParseTree(argv[2]);
     fclose(fp);
 
-    createAST(parseTreeRoot);
-    // printAST(parseTreeRoot->syn);
-    extractTypeAST(parseTreeRoot->syn);
-    // traverseSymbolTable(globalIdTable);
-    // printFunctionTable(funcTable);
-    printf("\nSemantic Checks: \n");
-    semanticChecker(parseTreeRoot->syn);
+    if (syntaxError == 0) {
+        createAST(parseTreeRoot);
+        // printAST(parseTreeRoot->syn);
+        extractTypeAST(parseTreeRoot->syn);
+        // traverseSymbolTable(globalIdTable);
+        // printFunctionTable(funcTable);
+        printf("\nSemantic Checks: \n");
+        semanticChecker(parseTreeRoot->syn);
+    }
 }

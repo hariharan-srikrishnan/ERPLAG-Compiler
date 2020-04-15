@@ -21,6 +21,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
     entry.id = id;
     strcpy(entry.name, id.lexeme);
     entry.isInputParam = 0;
+    entry.loopVariable = 0;
 
     if (type->TorNT == 0 && type->data.T.tid == ARRAY) {
         entry.AorP = 1;
@@ -103,6 +104,7 @@ void extractTypeAST(astnode* root) {
     // program -> moduleDeclarations otherModules driverModule otherModules 
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
         idSymbolTable* firstTable = createIdSymbolTable();
+        strcpy(firstTable->name, root->data.NT.name);
         currentIdTable = firstTable;
         globalIdTable = currentIdTable;
         funcTable = createFuncSymbolTable();
@@ -147,16 +149,20 @@ void extractTypeAST(astnode* root) {
 
     // driverModule -> DRIVERDEF DRIVER PROGRAM DRIVERENDDEF moduleDef
     else if (root->TorNT == 1 && root->data.NT.ntid == driverModule) {
-        
-        // create a new symbol table
-        idSymbolTable* newIdTable = createIdSymbolTable();
-        linkTables(currentIdTable, newIdTable);
-        currentIdTable = newIdTable;
-        root->scopeTable = *currentIdTable;
-        currentOffset = 0;
-        
         astnode* drivernode = root->children;
         astnode* moduleDefNode = drivernode->sibling;
+
+        // create a new symbol table
+        idSymbolTable* newIdTable = createIdSymbolTable();
+        strcpy(newIdTable->name, drivernode->data.T.lexeme);
+        newIdTable->startLineNo = moduleDefNode->startLineNo;
+        newIdTable->endLineNo = moduleDefNode->endLineNo;
+        linkTables(currentIdTable, newIdTable);
+        currentIdTable = newIdTable;
+        root->scopeTable = currentIdTable;
+        currentOffset = 0;
+        
+        
         symbolTableFuncEntry entry = createFuncEntry(drivernode->data.T, NULL, 0, NULL, 0);
         entry.link = *currentIdTable;
         entry.definitionLineNo = root->children->data.T.lineNo;
@@ -176,9 +182,10 @@ void extractTypeAST(astnode* root) {
         
         // create a new symbol table
         idSymbolTable* newIdTable = createIdSymbolTable();
+        strcpy(newIdTable->name, root->children->data.T.lexeme);
         linkTables(currentIdTable, newIdTable);
         currentIdTable = newIdTable;
-        root->scopeTable = *currentIdTable;
+        root->scopeTable = currentIdTable;
         currentOffset = 0;
 
         // add input parameters to identifier table and function parameters to function table
@@ -273,9 +280,10 @@ void extractTypeAST(astnode* root) {
             funcTable = insertFunc(funcTable, funcEntry);
         }
 
+        currentIdTable->startLineNo = moduleDefNode->startLineNo;
+        currentIdTable->endLineNo = moduleDefNode->endLineNo;
         extractTypeAST(moduleDefNode);
         currentIdTable = currentIdTable->parent;
-        // return currentIdTable;
     }
 
     // statements -> statement statements
@@ -331,9 +339,12 @@ void extractTypeAST(astnode* root) {
 
         // create a new symbol table
         idSymbolTable* newIdTable = createIdSymbolTable();
+        strcpy(newIdTable->name, "SWITCH");
+        newIdTable->startLineNo = root->startLineNo;
+        newIdTable->endLineNo = root->endLineNo;
         linkTables(currentIdTable, newIdTable);
         currentIdTable = newIdTable;
-        root->scopeTable = *currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling);
         extractTypeAST(root->children->sibling->sibling);
@@ -351,26 +362,32 @@ void extractTypeAST(astnode* root) {
     }
 
     // iterativeStmt -> FOR BO ID IN range BC START statements END
-    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 1 && root->children->data.NT.ntid == FOR) {
+    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.NT.ntid == FOR) {
 
         // create a new symbol table
         idSymbolTable* newIdTable = createIdSymbolTable();
+        strcpy(newIdTable->name, "FOR");
+        newIdTable->startLineNo = root->startLineNo;
+        newIdTable->endLineNo = root->endLineNo;
         linkTables(currentIdTable, newIdTable);
         currentIdTable = newIdTable;
-        root->scopeTable = *currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling->sibling);
         currentIdTable = currentIdTable->parent;
     }
 
     // iterativeStmt -> WHILE BO arithmeticOrBooleanExpr BC START statements END
-    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 1 && root->children->data.NT.ntid == WHILE) {
+    else if (root->TorNT == 1 && root->data.NT.ntid == iterativeStmt && root->children->TorNT == 0 && root->children->data.NT.ntid == WHILE) {
        
         // create a new symbol table
         idSymbolTable* newIdTable = createIdSymbolTable();
+        strcpy(newIdTable->name, "WHILE");
+        newIdTable->startLineNo = root->startLineNo;
+        newIdTable->endLineNo = root->endLineNo;
         linkTables(currentIdTable, newIdTable);
         currentIdTable = newIdTable;
-        root->scopeTable = *currentIdTable;
+        root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling->sibling);
         currentIdTable = currentIdTable->parent;

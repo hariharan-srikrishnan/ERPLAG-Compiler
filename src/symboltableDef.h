@@ -38,6 +38,7 @@ typedef struct _symbolTableIdEntry {
     int loopVariable; // whether it is a loop variable
     int isInputParam; // is it an input parameter
     int isShadowed; // is input param shadowed
+    // int shadowLineNo; // line number at which input parameter
 } symbolTableIdEntry;
 
 
@@ -60,6 +61,8 @@ typedef struct _idSymbolTable{
     idLinkedList* list; // buckets of lists each corresponding to a particular hash
     int hashSize; // number of hash values
     struct _idSymbolTable *parent, *child, *sibling; // for nested scopes
+    char name[25];
+    int startLineNo, endLineNo; // scope information
 } idSymbolTable;
 
 

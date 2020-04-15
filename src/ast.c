@@ -14,6 +14,8 @@ astnode* createASTNode(t_node* node) {
     newNode->children = NULL;
     newNode->sibling = NULL;
     newNode->entry = NULL;
+    newNode->scopeTable = NULL;
+    newNode->isRedeclared = 0;
     return newNode;
 }
 
@@ -289,6 +291,9 @@ void createAST(t_node* root) {
 
         root->syn = createASTNode(root);
         root->syn->children = stmts_ast->syn;
+
+        root->syn->startLineNo = root->children->data.T.lineNo;
+        root->syn->endLineNo = root->children->sibling->sibling->data.T.lineNo;
     }
 
     // statements -> statement statements
@@ -880,6 +885,9 @@ void createAST(t_node* root) {
         root->syn->children = id_ast->syn;
         id_ast->syn->sibling = caseStmts_ast->syn;
         caseStmts_ast->syn->sibling = default_ast->syn;
+
+        root->syn->startLineNo = id_ast->sibling->sibling->data.T.lineNo;
+        root->syn->endLineNo = default_ast->sibling->data.T.lineNo;
     }
 
     // caseStmts -> CASE value COLON statements BREAK SEMICOL N9
@@ -965,6 +973,9 @@ void createAST(t_node* root) {
         for_ast->syn->sibling = id_ast->syn;
         id_ast->syn->sibling = range_ast->syn;
         range_ast->syn->sibling = stmts_ast->syn;
+
+        root->syn->startLineNo = range_ast->sibling->sibling->data.T.lineNo;
+        root->syn->endLineNo = stmts_ast->sibling->data.T.lineNo;
     }
     
     // iterativeStmt -> WHILE BO arithmeticOrBooleanExpr BC START statements END
@@ -980,6 +991,9 @@ void createAST(t_node* root) {
         root->syn->children = while_ast->syn;
         while_ast->syn->sibling = abexpr_ast->syn;
         abexpr_ast->syn->sibling = stmts_ast->syn;
+
+        root->syn->startLineNo = abexpr_ast->sibling->sibling->data.T.lineNo;
+        root->syn->endLineNo = stmts_ast->sibling->data.T.lineNo;
     }
     
     // range -> NUM RANGEOP NUM
