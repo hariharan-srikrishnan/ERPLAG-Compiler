@@ -6,12 +6,16 @@
 start
 	declare x, y, z:integer;
 	declare a, b, c:integer;
+	c:=  2;
 	a:= 5;
 	b:= 9;
 	get_value(x);
 	get_value(y);
-	z:= x + y*b +(a-b)*y+ a*2 - b*x;	
-        print(z);
+	z := x + y + 2;
+	c := a + b;
+	print(b);
+	print(a);
+		
 end
 
 ** On the console
@@ -25,3 +29,5 @@ Output: 9
 Similarly run the generated assembly code for other input values and verify.
 
 **
+
+

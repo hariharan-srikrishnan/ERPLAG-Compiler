@@ -1,6 +1,6 @@
 **Code Generation test case 2: Computing expressions using integer and boolean data type**
 
-**Single driver module with single level nesting **
+**Single driver module with single level nesting**
 
 <<<driver program>>>
 start
