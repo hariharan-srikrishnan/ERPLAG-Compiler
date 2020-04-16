@@ -7,14 +7,15 @@
 
           global    main
           extern scanf
+          extern printf
 
-          section   .text
-main:     mov       rax, 1                  ; system call for write
-          mov       rdi, message                 ; file handle 1 is stdout
-          mov rsi, x
-          xor       rax, rax            ; address of string to output
+section   .text
+main:     
+          lea rdi, [message]                
+          lea rsi, [x]
+          xor rax, rax           
           call scanf
 
-          section   .data
+section   .data
 message:  db        "%d", 10      ; note the newline at the end
-x: dq 0.0
+x dq 5

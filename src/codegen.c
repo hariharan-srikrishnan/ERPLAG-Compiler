@@ -51,16 +51,18 @@ char* generateTemporary(astnode* root) {
     token t = root->data.T;
     strcpy(t.lexeme, temp);
 
-    symbolTableIdEntry entry;
-    entry.id = t;
-    entry.AorP = 0;
-    strcpy(entry.name, temp);
-    entry.offset = findMaxOffset(currentIdTable);
-    entry.type.primitive.datatype.tid = root->datatype.tid;
-    entry.type.primitive.width = 8;
+    symbolTableIdEntry* entry = (symbolTableIdEntry*) malloc(sizeof(symbolTableIdEntry));
+    entry->id = t;
+    entry->AorP = 0;
+    strcpy(entry->name, temp);
+    entry->type.primitive.datatype.tid = root->datatype.tid;
+    entry->type.primitive.width = 8;
+
+    int maxOffset = findMaxOffset(currentIdTable);
+    entry->offset = maxOffset + entry->type.primitive.width;
     
-    *currentIdTable = insertId(*currentIdTable, entry);
-    root->entry = &entry;
+    *currentIdTable = insertId(*currentIdTable, *entry);
+    root->entry = entry;
     return temp;
 }
 
@@ -95,23 +97,23 @@ void generateASM(astnode* root) {
     if (root->TorNT == 1 && root->data.NT.ntid == program) {
 
         // Data defintions
-        fprintf(asmFile, "section .data\n");
-        fprintf(asmFile, "\tintegerRead: db \"%%d\", 0\n");
-        fprintf(asmFile, "\tintegerWrite: db \"%%d\", 10, 0\n"); // newline, null terminator
-        fprintf(asmFile, "\trealRead: db \"%%lf\", 0\n");
-        fprintf(asmFile, "\trealWrite: db \"%%lf\", 10, 0\n"); // newline, null terminator
+        fprintf(asmFile, "section .data\n\n");
+        fprintf(asmFile, "integerRead db \"%%d\", 0\n");
+        fprintf(asmFile, "integerWrite db \"%%d\", 10, 0\n"); // newline, null terminator
+        fprintf(asmFile, "realRead db \"%%lf\", 0\n");
+        fprintf(asmFile, "realWrite db \"%%lf\", 10, 0\n"); // newline, null terminator
         
         // fancy printing formats
-        fprintf(asmFile, "\tintMessage: db \"Enter an integer\", 10, 0\n");
-        fprintf(asmFile, "\treaMessage: db \"Enter an real:\", 10, 0\n");
-        fprintf(asmFile, "\tboolMessage: db \"Enter a boolean (1 or 0 only):\", 10, 0\n");
+        fprintf(asmFile, "intMessage db \"Enter an integer\", 10, 0\n");
+        fprintf(asmFile, "reaMessage db \"Enter an real:\", 10, 0\n");
+        fprintf(asmFile, "boolMessage db \"Enter a boolean (1 or 0 only):\", 10, 0\n");
 
-        fprintf(asmFile, "\tintArrMessage: db \"Enter integer array for range %%d to %%d:\", 10, 0\n");
-        fprintf(asmFile, "\trealArrMessage: db \"Enter real array for range %%d to %%d:\", 10, 0\n");
-        fprintf(asmFile, "\tboolArrMessage: db \"Enter boolean array for range %%d to %%d (1 or 0 only):\", 10, 0\n");
+        fprintf(asmFile, "intArrMessage db \"Enter integer array for range %%d to %%d:\", 10, 0\n");
+        fprintf(asmFile, "realArrMessage db \"Enter real array for range %%d to %%d:\", 10, 0\n");
+        fprintf(asmFile, "boolArrMessage db \"Enter boolean array for range %%d to %%d (1 or 0 only):\", 10, 0\n");
 
         // standard error message 
-        fprintf(asmFile, "\trunTimeError: db \"Run-time error: Bound values error\", 10, 0\n"); // newline, null terminator
+        fprintf(asmFile, "runTimeError db \"Run-time error: Bound values error\", 10, 0\n"); // newline, null terminator
         fprintf(asmFile, "\n\n");
         
         // code segment
@@ -123,10 +125,10 @@ void generateASM(astnode* root) {
         // error handling - sys_exit system call
         fprintf(asmFile, "_error: \n");
         fprintf(asmFile, "\tMOV RDI, runTimeError\n");
-        fprintf(asmFile, "\tXOR RAX, RAX\n");
+        fprintf(asmFile, "\tMOV AL, 0\n");
         fprintf(asmFile, "\tCALL printf\n");
         fprintf(asmFile, "\tMOV RAX, 60\n");
-        fprintf(asmFile, "\tXOR RDI, RDI\n");
+        fprintf(asmFile, "\tMOV RDI, 0\n");
         fprintf(asmFile, "\tSYSCALL\n");
         fprintf(asmFile, "\n\n");
 
@@ -401,9 +403,11 @@ void generateASM(astnode* root) {
             else 
                 fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
             
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL printf\n");
 
+            // align to 16-byte boundaries
+            fprintf(asmFile, "\tSUB RSP, 8\n");
 
             if (entry->type.primitive.datatype.tid == INTEGER || entry->type.primitive.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
@@ -412,8 +416,9 @@ void generateASM(astnode* root) {
                 fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
             fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d]\n", entry->offset);
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
+            fprintf(asmFile, "\tADD RSP, 8\n");
         }
 
         // static arrays 
@@ -437,7 +442,7 @@ void generateASM(astnode* root) {
             else 
                 fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL printf\n");
 
             fprintf(asmFile, "\tMOV R8W, %d\n", lb);
@@ -453,7 +458,7 @@ void generateASM(astnode* root) {
             else if (entry->type.array.datatype.datatype.tid == REAL) 
                 fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
             fprintf(asmFile, "\tINC R8W\n");
             fprintf(asmFile, "\tINC R9W\n");
@@ -525,7 +530,7 @@ void generateASM(astnode* root) {
             else if (entry->type.array.datatype.datatype.tid == REAL) 
                 fprintf(asmFile, "\tLEA RDI, [realRead]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
             fprintf(asmFile, "\tINC R8W\n");
             fprintf(asmFile, "\tINC R10W\n");
@@ -540,7 +545,7 @@ void generateASM(astnode* root) {
         // primitive datatype
         if (entry->AorP == 0) {
             
-            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d]\n", entry->offset);
+            fprintf(asmFile, "\tMOV RSI, [RBP - 16 - %d]\n", entry->offset);
 
             if (entry->type.primitive.datatype.tid == INTEGER || entry->type.primitive.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
@@ -548,7 +553,7 @@ void generateASM(astnode* root) {
             else if (entry->type.primitive.datatype.tid == REAL) 
                 fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL printf\n");
         }
 
@@ -566,7 +571,7 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, %d\n", ub);
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R9W * %d]\n", entry->offset, width);
+            fprintf(asmFile, "\tMOV RSI, [RBP - 16 - %d - R9W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
@@ -574,7 +579,7 @@ void generateASM(astnode* root) {
             else 
                 fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL printf\n");
             fprintf(asmFile, "\tINC R8W\n");
             fprintf(asmFile, "\tINC R9W\n");
@@ -638,7 +643,7 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8W, R9W\n");
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d - R10W * %d]\n", entry->offset, width);
+            fprintf(asmFile, "\tMOV RSI, [RBP - 16 - %d - R10W * %d]\n", entry->offset, width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
@@ -646,7 +651,7 @@ void generateASM(astnode* root) {
             else if (entry->type.array.datatype.datatype.tid == REAL) 
                 fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
 
-            fprintf(asmFile, "\tXOR RAX, RAX\n");
+            fprintf(asmFile, "\tMOV AL,0\n");
             fprintf(asmFile, "\tCALL printf\n");
             fprintf(asmFile, "\tINC R8W\n");
             fprintf(asmFile, "\tINC R10W\n");
@@ -667,7 +672,6 @@ void generateASM(astnode* root) {
         if (id->sibling->TorNT == 1 && id->sibling->data.NT.ntid == lvalueIDStmt) {
             astnode* expr = id->sibling->children;
             generateASM(expr);
-            printf("%s, %s\n", expr->data.T.lexeme, expr->children->data.T.lexeme);
 
             if (id->entry->AorP == 0) {
                 fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", expr->entry->offset);
@@ -1275,8 +1279,10 @@ void generateASM(astnode* root) {
 
         generateASM(leftchild);
         generateASM(rightchild);
+        printf("%s - %d, %s - %d, ", leftchild->entry->name, leftchild->entry->offset, rightchild->entry->name, rightchild->entry->offset);
 
         char* tmp = generateTemporary(root);
+        printf("%s, %d\n", root->entry->name, root->entry->offset);
 
         // addition
         if (root->data.T.tid == PLUS) {
