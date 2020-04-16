@@ -485,9 +485,6 @@ void createAST(t_node* root) {
         
         root->syn = createASTNode(root);
         root->syn->children = whichStmt_ast->syn;    
-
-        // id has been updated - will be used for semantic rule check
-        // id_ast->syn->isUpdated = 1;    
     }
     
     // whichStmt -> lvalueIDStmt

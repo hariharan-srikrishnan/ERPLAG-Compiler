@@ -1165,6 +1165,8 @@ void semanticChecker(astnode* root) {
         astnode* idx = root->children->sibling;
         idSymbolTable* tmp = currentIdTable;
         symbolTableIdEntry* entry = NULL;
+        semanticChecker(idx);
+
 
         while(1) {
              entry = searchId(*tmp, id);
@@ -1217,12 +1219,16 @@ void semanticChecker(astnode* root) {
                     semanticError = 1;
                 }
 
-                else 
+                else {
                     root->datatype = entry->type.array.datatype.datatype;
+                    root->entry = entry;
+                }
             }
 
-        else 
-            root->datatype = entry->type.array.datatype.datatype;
+            else {
+                root->datatype = entry->type.array.datatype.datatype;
+                root->entry = entry;
+            }
         }
     }   
 }
