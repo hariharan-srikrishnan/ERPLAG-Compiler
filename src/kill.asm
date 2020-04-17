@@ -14,7 +14,7 @@ main:
           lea rdi, [message]                
           lea rsi, [x]
           xor rax, rax           
-          call scanf
+          LEA RSI, [RBP - 16 - 64 - R9W * 8]
 
 section   .data
 message:  db        "%d", 10      ; note the newline at the end
