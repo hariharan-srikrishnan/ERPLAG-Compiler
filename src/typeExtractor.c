@@ -44,7 +44,7 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
             // new offset calculation
             int lb = atoi(entry.type.array.lowerBound.lexeme);
             int ub = atoi(entry.type.array.upperBound.lexeme);
-            currentOffset += (ub - lb - 1) * entry.type.array.datatype.width;
+            currentOffset += (ub - lb + 1) * entry.type.array.datatype.width;
         }
     }  
 
@@ -439,7 +439,7 @@ void printFunctionTable(funcSymbolTable table) {
         }
     }
 }
-
+ 
 
 // int main (int argc, char* argv[]) {
 //     parserfp = fopen("grammar.txt", "r");

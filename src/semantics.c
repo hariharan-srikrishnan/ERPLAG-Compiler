@@ -499,6 +499,7 @@ void semanticChecker(astnode* root) {
             astnode* idx = id->sibling;
             idSymbolTable* tmp = currentIdTable;
             symbolTableIdEntry* entry = NULL; 
+            semanticChecker(idx);
 
             while (1) {
                 entry = searchId(*tmp, id->data.T.lexeme);
@@ -856,7 +857,7 @@ void semanticChecker(astnode* root) {
                 token upperBound = entry->type.array.upperBound;
                 astnode* lb = root->children->sibling->children;
                 astnode* ub = root->children->sibling->children;
-
+                
                 // static array
                 if (entry->type.array.dynamicArray == 0) {
                     int lower = atoi(entry->type.array.lowerBound.lexeme);
@@ -1012,6 +1013,10 @@ void semanticChecker(astnode* root) {
         }
 
         semanticChecker(caseStatements);
+        
+        if (default_ast)
+            semanticChecker(default_ast->children);
+        
         currentIdTable = currentIdTable->parent;
     }
     
