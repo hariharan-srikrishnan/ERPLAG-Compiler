@@ -131,8 +131,10 @@ void extractTypeAST(astnode* root) {
         symbolTableFuncEntry entry = createFuncEntry(id->data.T, NULL, 0, NULL, 0);
         
         // module hasn't been declared yet
-        if (entry.declarationLineNo == -1)
+        if (entry.declarationLineNo == -1) {
             entry.declarationLineNo = id->data.T.lineNo;
+            entry.declarationUsed = 0;
+        }
 
         // if it is declared, insert won't insert anything and flag an error in semantics
         funcTable = insertFunc(funcTable, entry); 

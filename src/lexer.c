@@ -13,7 +13,7 @@ Praveen Ravirathinam   - 2017A7PS1174P
 #include "lexerDef.h"
 #include "hash.h"
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 16384
 
 char* keywords[] = {
 	"integer",

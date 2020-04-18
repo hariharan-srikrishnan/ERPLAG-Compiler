@@ -25,8 +25,8 @@ int main (int argc, char* argv[]) {
     createParseTable();
     parseInputSourceCode(argv[1]);
 
-    if (!syntaxError)
-        printParseTree(argv[2]);
+    // if (!syntaxError)
+    //     printParseTree(argv[2]);
     
     fclose(fp);
 

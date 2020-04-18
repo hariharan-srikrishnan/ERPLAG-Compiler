@@ -15,10 +15,10 @@ Praveen Ravirathinam   - 2017A7PS1174P
 #include "parserutils.h"
 #include "parser.h"
 
-int main(){
+int main(int argc, char* argv[]){
 	
 	// open and read grammar
-	parserfp = fopen("../grammar.txt", "r");
+	parserfp = fopen("grammar.txt", "r");
 	readGrammar(parserfp);
 	fclose(parserfp);
 
@@ -35,13 +35,15 @@ int main(){
 	fclose(f);
 
 	// open and read program to parse
-	char* testfile = "t2.txt";
-	fp = fopen(testfile, "r");
+	// char* testfile = "t2.txt";
+	fp = fopen(argv[1], "r");
+	if (fp == NULL)
+		printf("HRE!");
 	getStream(fp);
 
 	// parse the program and print the Parse Tree to a text file
-	parseInputSourceCode(testfile);
+	parseInputSourceCode(argv[2]);
 	if (!syntaxError)
-		printParseTree("parseTree_test.txt");
+		printParseTree("parseTree.txt");
 
 }

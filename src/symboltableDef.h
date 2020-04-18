@@ -84,6 +84,7 @@ typedef struct _symbolTableFuncEntry {
     int numOutputParams; // number of output parameters
     struct _idSymbolTable link; // link to symbol table for that scope
     int declarationLineNo, definitionLineNo; // line numbers of the module declaration and definitions respetively
+    int declarationUsed;
 } symbolTableFuncEntry;
 
 

@@ -32,20 +32,27 @@ _error:
 main: 
 	PUSH RBP
 	MOV RBP, RSP
-	SUB RSP, 40
+	SUB RSP, 72
+	MOV RAX, RSP
+	MOV RDX, 0
+	MOV R9, 16
+	IDIV R9
+	CMP RDX, 0
+	JE label0
 	SUB RSP, 8
-	MOV QWORD [RBP - 16 - 40], 19
-	MOV RAX, QWORD [RBP - 16 - 40]
-	MOV QWORD [RBP - 16 - 8], RAX
-	SUB RSP, 8
-	MOV QWORD [RBP - 16 - 48], 56
-	MOV RAX, QWORD [RBP - 16 - 48]
-	MOV QWORD [RBP - 16 - 16], RAX
-	MOV R15, 3
+	MOV R11D, 1
 label0: 
-	MOV QWORD [RBP - 16 - 32], R15
-	CMP R15, 6
-	JG label1
+	LEA RDI, [intMessage]
+	MOV AL, 0
+	CALL printf
+	LEA RDI, [integerRead]
+	LEA RSI, [RBP - 16 - 56]
+	MOV AL, 0
+	CALL scanf
+	CMP R11D, 1
+	JNE label1
+	ADD RSP, 8
+label1: 
 	MOV RAX, RSP
 	MOV RDX, 0
 	MOV R9, 16
@@ -53,8 +60,80 @@ label0:
 	CMP RDX, 0
 	JE label2
 	SUB RSP, 8
-	MOV R8, 1
+	MOV R11D, 1
 label2: 
+	LEA RDI, [intMessage]
+	MOV AL, 0
+	CALL printf
+	LEA RDI, [integerRead]
+	LEA RSI, [RBP - 16 - 64]
+	MOV AL, 0
+	CALL scanf
+	CMP R11D, 1
+	JNE label3
+	ADD RSP, 8
+
+	MOV RSI, 100
+	LEA RDI, [intMessage]
+	MOV AL, 0
+	CALL printf
+
+
+label3: 
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8, R9
+	JG _error
+	MOV R10, 0
+label4: 
+	CMP R8D, R9D
+	JG label5
+	MOV RAX, R10
+	NEG RAX
+	LEA RSI, [RBP + RAX * 8 - 16 - 0]
+	LEA RDI, [integerRead]
+	MOV AL, 0
+	CALL scanf
+	INC R8
+	INC R10
+	JMP label4
+label5: 
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8, R9
+	JG _error
+	MOV R10, 0
+label6: 
+	CMP R8, R9
+	JG label7
+	MOV RAX, R10
+	NEG RAX
+	LEA RSI, [RBP + RAX * 8 - 16 - 0]
+	LEA RDI, [integerRead]
+	MOV AL, 0
+	CALL scanf
+	INC R8
+	INC R10
+	JMP label6
+label7: 
+	SUB RSP, 8
+	MOV QWORD [RBP - 16 - 72], 7
+	MOV RAX, QWORD [RBP - 16 - 72]
+	MOV QWORD [RBP - 16 - 16], RAX
+	MOV R15, 1
+label8: 
+	MOV QWORD [RBP - 16 - 24], R15
+	CMP R15, 3
+	JG label9
+	MOV RAX, RSP
+	MOV RDX, 0
+	MOV R9, 16
+	IDIV R9
+	CMP RDX, 0
+	JE label10
+	SUB RSP, 8
+	MOV R8, 1
+label10: 
 	LEA RDI, [intMessage]
 	MOV AL, 0
 	CALL printf
@@ -63,88 +142,146 @@ label2:
 	MOV AL, 0
 	CALL scanf
 	CMP R8, 1
-	JNE label3
+	JNE label11
 	ADD RSP, 8
-label3: 
-	MOV R8D, [RBP - 16 - 0]
-	CMP R8D, 1
-	JE label4
-	CMP R8D, 2
-	JE label5
-	JMP label7
-label4: 
+label11: 
+	MOV RAX, RSP
+	MOV RDX, 0
+	MOV R9, 16
+	IDIV R9
+	CMP RDX, 0
+	JE label12
 	SUB RSP, 8
-	MOV QWORD [RBP - 16 - 124], 2
+	MOV R8, 1
+label12: 
+	LEA RDI, [intMessage]
+	MOV AL, 0
+	CALL printf
+	LEA RDI, [integerRead]
+	LEA RSI, [RBP - 16 - 8]
+	MOV AL, 0
+	CALL scanf
+	CMP R8, 1
+	JNE label13
+	ADD RSP, 8
+label13: 
 	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 0]
-	MOV R12, QWORD [RBP - 16 - 124]
-	MOV   RAX, R11
-	IMUL  R12
-	MOV   QWORD [RBP - 16 - 132], RAX
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	MOV R10D, [RBP - 16 - 0]
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R11, R10D
+	SUB R11, R8
+	MOV RAX, R11
+	NEG RAX
+	MOV R11, QWORD [RBP + RAX * 8 - 16 - 0]
+	MOV R10D, [RBP - 16 - 8]
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R12, R10D
+	SUB R12, R8
+	MOV RAX, R12
+	NEG RAX
+	MOV R12, QWORD [RBP + RAX * 8 - 16 - 0]
+	MOV  RAX, R11
+	ADD  RAX, R12
+	MOV  QWORD [RBP - 16 - 124], RAX
+	MOV RAX, QWORD [RBP - 16 - 124]
+	MOV QWORD [RBP - 16 - 32], RAX
 	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 8]
-	MOV R12, QWORD [RBP - 16 - 32]
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	MOV R10D, [RBP - 16 - 16]
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R11, R10D
+	SUB R11, R8
+	MOV RAX, R11
+	NEG RAX
+	MOV R11, QWORD [RBP + RAX * 8 - 16 - 0]
+	MOV R10D, [RBP - 16 - 8]
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R12, R10D
+	SUB R12, R8
+	MOV RAX, R12
+	NEG RAX
+	MOV R12, QWORD [RBP + RAX * 8 - 16 - 0]
+	MOV  RAX, R11
+	ADD  RAX, R12
+	MOV  QWORD [RBP - 16 - 132], RAX
+	MOV RAX, QWORD [RBP - 16 - 132]
+	MOV QWORD [RBP - 16 - 40], RAX
+	SUB RSP, 8
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	MOV R10D, [RBP - 16 - 0]
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R11, R10D
+	SUB R11, R8
+	MOV RAX, R11
+	NEG RAX
+	MOV R11, QWORD [RBP + RAX * 8 - 16 - 0]
+	MOV R10D, [RBP - 16 - 16]
+	MOV R8, QWORD [RBP - 16 - 56]
+	MOV R9, QWORD [RBP - 16 - 64]
+	CMP R8D, R9D
+	JG _error
+	CMP R8D, R10D
+	JG _error
+	CMP R9D, R10D
+	JL _error
+	MOVSX R12, R10D
+	SUB R12, R8
+	MOV RAX, R12
+	NEG RAX
+	MOV R12, QWORD [RBP + RAX * 8 - 16 - 0]
 	MOV  RAX, R11
 	ADD  RAX, R12
 	MOV  QWORD [RBP - 16 - 140], RAX
-	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 132]
-	MOV R12, QWORD [RBP - 16 - 140]
-	MOV  RAX, R11
-	SUB  RAX, R12
-	MOV  QWORD [RBP - 16 - 148], RAX
-	MOV RAX, QWORD [RBP - 16 - 148]
-	MOV QWORD [RBP - 16 - 8], RAX
-	MOV RSI, QWORD [RBP - 16 - 8]
+	MOV RAX, QWORD [RBP - 16 - 140]
+	MOV QWORD [RBP - 16 - 48], RAX
+	MOV RSI, QWORD [RBP - 16 - 32]
 	LEA RDI, [integerWrite]
 	MOV AL, 0
 	CALL printf
-	JMP label6
-label5: 
-	SUB RSP, 8
-	MOV QWORD [RBP - 16 - 156], 3
-	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 0]
-	MOV R12, QWORD [RBP - 16 - 156]
-	MOV   RAX, R11
-	IMUL  R12
-	MOV   QWORD [RBP - 16 - 164], RAX
-	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 16]
-	MOV R12, QWORD [RBP - 16 - 32]
-	MOV  RAX, R11
-	ADD  RAX, R12
-	MOV  QWORD [RBP - 16 - 172], RAX
-	SUB RSP, 8
-	MOV R11, QWORD [RBP - 16 - 164]
-	MOV R12, QWORD [RBP - 16 - 172]
-	MOV  RAX, R11
-	SUB  RAX, R12
-	MOV  QWORD [RBP - 16 - 180], RAX
-	MOV RAX, QWORD [RBP - 16 - 180]
-	MOV QWORD [RBP - 16 - 16], RAX
-	MOV RSI, QWORD [RBP - 16 - 16]
+	MOV RSI, QWORD [RBP - 16 - 40]
 	LEA RDI, [integerWrite]
 	MOV AL, 0
 	CALL printf
-	JMP label6
-label7: 
-	MOV RSI, QWORD [RBP - 16 - 0]
-	LEA RDI, [integerWrite]
-	MOV AL, 0
-	CALL printf
-label6: 
-	MOV RSI, QWORD [RBP - 16 - 8]
-	LEA RDI, [integerWrite]
-	MOV AL, 0
-	CALL printf
-	MOV RSI, QWORD [RBP - 16 - 16]
+	MOV RSI, QWORD [RBP - 16 - 48]
 	LEA RDI, [integerWrite]
 	MOV AL, 0
 	CALL printf
 	INC R15
-	JMP label0
-label1: 
+	JMP label8
+label9: 
 	MOV RSP, RBP
 	POP RBP
 	RET

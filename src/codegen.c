@@ -451,7 +451,7 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tLEA RSI, [RBP - 16 - %d]\n", entry->offset);
             fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
-            fprintf(asmFile, "\tCMP R8, 1\n");
+            fprintf(asmFile, "\tCMP R8D, 1\n");
             fprintf(asmFile, "\tJNE %s\n", exitLabel2);
             fprintf(asmFile, "\tADD RSP, 8\n");
             fprintf(asmFile, "%s: \n", exitLabel2);
@@ -1424,23 +1424,23 @@ void generateASM(astnode* root) {
 
 
             // check if bounds are valid
-            fprintf(asmFile, "\tCMP R8, R9\n");
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
             fprintf(asmFile, "\tJG _error\n");
 
             if (idx->data.T.tid == ID)
-                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+                fprintf(asmFile, "\tMOV R10D, [RBP - 16 - %d]\n", idx->entry->offset);
             
             else 
-                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
+                fprintf(asmFile, "\tMOV R10D, %s\n", idx->data.T.lexeme);
 
             // check if index within bounds
-            fprintf(asmFile, "\tCMP R8, R10\n");
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
             fprintf(asmFile, "\tJG _error\n");
-            fprintf(asmFile, "\tCMP R9, R10\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
             fprintf(asmFile, "\tJL _error\n");
             
             // store left offset in register
-            fprintf(asmFile, "\tMOV R11, R10\n");
+            fprintf(asmFile, "\tMOVSX R11, R10D\n");
             fprintf(asmFile, "\tSUB R11, R8\n");
             fprintf(asmFile, "\tMOV RAX, R11\n");
             fprintf(asmFile, "\tNEG RAX\n");
@@ -1455,7 +1455,7 @@ void generateASM(astnode* root) {
             astnode* idx = rightchild->children->sibling;
             
             if (idx->data.T.tid == ID)
-                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+                fprintf(asmFile, "\tMOV R10D, [RBP - 16 - %d]\n", idx->entry->offset);
             
             else 
                 fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
@@ -1508,17 +1508,17 @@ void generateASM(astnode* root) {
 
 
             // check if bounds are valid
-            fprintf(asmFile, "\tCMP R8, R9\n");
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
             fprintf(asmFile, "\tJG _error\n");
 
             // check if index within bounds
-            fprintf(asmFile, "\tCMP R8, R10\n");
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
             fprintf(asmFile, "\tJG _error\n");
-            fprintf(asmFile, "\tCMP R9, R10\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
             fprintf(asmFile, "\tJL _error\n");
             
             // store left offset in register
-            fprintf(asmFile, "\tMOV R12, R10\n");
+            fprintf(asmFile, "\tMOVSX R12, R10D\n");
             fprintf(asmFile, "\tSUB R12, R8\n");
             fprintf(asmFile, "\tMOV RAX, R12\n");
             fprintf(asmFile, "\tNEG RAX\n");
