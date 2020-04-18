@@ -180,6 +180,8 @@ void getStream(FILE* fp) {
 	testIdentifierLength = 0;
 	start = buffer1;
 	current = buffer1;
+	readBuffer1 = 1;
+	readBuffer2 = 0;
 	// read from file into buffer, and terminate it by EOF
 	int size = fread(buffer1, sizeof(char), BUFFER_SIZE, fp);
 	t = createTable(tableSize);

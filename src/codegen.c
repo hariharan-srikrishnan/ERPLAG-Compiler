@@ -1,3 +1,18 @@
+/*
+Anirudh S Chakravarthy - 2017A7PS1195P
+Hariharan Srikrishnan  - 2017A7PS0134P
+Honnesh Rohmetra	   - 2016B2A70770P
+Praveen Ravirathinam   - 2017A7PS1174P
+*/
+
+/*
+    Good references for NASM 64-bit
+        1. Really good tutorial: https://cs.lmu.edu/~ray/notes/nasmtutorial/
+        2. Floating Point: https://my.eng.utah.edu/~cs4400/sse-fp.pdf
+        3. Addressing modes: https://en.wikipedia.org/wiki/X86#Addressing_modes
+        4. https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -242,14 +257,14 @@ void generateASM(astnode* root) {
             tmp = tmp->next;
         }
 
-       
+       // move input parameters from shared space into offset locations
         tmp = entry->inputParameters;
         int i = 0;
         while (tmp) {
             symbolTableIdEntry* entry = searchId(*currentIdTable, tmp->id.lexeme);
 
             if (entry->AorP == 0) {
-                fprintf(asmFile, "\tMOV RAX, QWORD [RBP + %d + %d]\n", outputSize, i);
+                fprintf(asmFile, "\tMOV RAX, QWORD [RBP + %d + 16 + %d]\n", outputSize, i);
                 fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", entry->offset);
                 i += entry->type.primitive.width;
             }
@@ -266,7 +281,7 @@ void generateASM(astnode* root) {
                 fprintf(asmFile, "\tCMP R8, %d\n", ub);
                 fprintf(asmFile, "\tJG %s\n", exitLabel);
 
-                fprintf(asmFile, "\tMOV RAX, QWORD [RBP + %d + %d * R9]\n", outputSize, entry->offset);
+                fprintf(asmFile, "\tMOV RAX, QWORD [RBP + 16 + %d + %d * R9]\n", outputSize, entry->offset);
                 fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d - R9 * %d], RAX\n", entry->offset, entry->type.array.datatype.width);
 
                 fprintf(asmFile, "\tINC R8\n");
@@ -282,7 +297,7 @@ void generateASM(astnode* root) {
         // execute the statements of the module
         generateASM(moduledef);
 
-        // output parameters
+        // place output parameters back into shared space
         if (ret_ast != NULL) {
             tmp = entry->outputParameters;
             i = 0;
@@ -292,7 +307,7 @@ void generateASM(astnode* root) {
                 // primitive
                 if (entry->AorP == 0) {
                     fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", entry->offset);
-                    fprintf(asmFile, "\tMOV QWORD [RBP + %d], RAX\n", i);
+                    fprintf(asmFile, "\tMOV QWORD [RBP + 16 + %d], RAX\n", i);
                     i += entry->type.primitive.width;
                 }
                 
@@ -310,7 +325,7 @@ void generateASM(astnode* root) {
                     fprintf(asmFile, "\tJG %s\n", exitLabel);
 
                     fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d - R9 * %d]\n", entry->offset, entry->type.array.datatype.width);
-                    fprintf(asmFile, "\tMOV QWORD [RBP + %d + R9 * %d], RAX\n", i, entry->type.array.datatype.width);
+                    fprintf(asmFile, "\tMOV QWORD [RBP + 16 + %d + R9 * %d], RAX\n", i, entry->type.array.datatype.width);
 
                     fprintf(asmFile, "\tINC R8\n");
                     fprintf(asmFile, "\tINC R9\n");
@@ -379,7 +394,7 @@ void generateASM(astnode* root) {
                     fprintf(asmFile, "\tJG %s\n", exitLabel);
 
                     fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d - R10 * %d]\n", entry->offset, entry->type.array.datatype.width);
-                    fprintf(asmFile, "\tMOV QWORD [RBP + %d + R10 * %d], RAX\n", i, entry->type.array.datatype.width);
+                    fprintf(asmFile, "\tMOV QWORD [RBP + 16 + %d + R10 * %d], RAX\n", i, entry->type.array.datatype.width);
 
                     fprintf(asmFile, "\tINC R8\n");
                     fprintf(asmFile, "\tINC R10\n");
@@ -393,7 +408,7 @@ void generateASM(astnode* root) {
         
         fprintf(asmFile, "\tMOV RSP, RBP\n"); 
         fprintf(asmFile, "\tPOP RBP\n"); 
-        fprintf(asmFile, "\tRET\n");
+        fprintf(asmFile, "\tRET\n\n");
 
         currentIdTable = currentIdTable->parent;
     }
@@ -996,7 +1011,6 @@ void generateASM(astnode* root) {
         }
 
         astnode* idlist = functionName->sibling;
-        currentIdTable = functionName->scopeTable;
 
         symbolTableFuncEntry* entry = searchFunc(funcTable, functionName->data.T.lexeme);
 
@@ -1239,7 +1253,8 @@ void generateASM(astnode* root) {
             }
 
             if (idEntry->AorP == 0) {
-                fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RSP\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV RAX, QWORD [RSP]\n");
+                fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", idEntry->offset);
                 fprintf(asmFile, "\tADD RSP, %d\n", idEntry->type.primitive.width);
             }
 
@@ -1256,7 +1271,8 @@ void generateASM(astnode* root) {
                 fprintf(asmFile, "%s: \n", label);
                 fprintf(asmFile, "\tCMP R8, %d\n", ub);
                 fprintf(asmFile, "\tJG %s\n", exitLabel);
-                fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d - R9 * %d], RSP \n", idEntry->offset, width); 
+                fprintf(asmFile, "\tMOV RAX, QWORD [RSP]\n");
+                fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d - R9 * %d], RAX\n", idEntry->offset, width); 
                 fprintf(asmFile, "\tADD RSP, %d\n", width);
                 fprintf(asmFile, "\tINC R8\n");
                 fprintf(asmFile, "\tINC R9\n");

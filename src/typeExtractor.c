@@ -1,3 +1,9 @@
+/*
+Anirudh S Chakravarthy - 2017A7PS1195P
+Hariharan Srikrishnan  - 2017A7PS0134P
+Honnesh Rohmetra	   - 2016B2A70770P
+Praveen Ravirathinam   - 2017A7PS1174P
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,8 +12,6 @@
 #include "ast.h"
 #include "symboltableDef.h"
 #include "symboltable.h"
-
-// void traverseSymbolTable(idSymbolTable* table);
 
 
 idSymbolTable *currentIdTable, *globalIdTable;
@@ -397,19 +401,6 @@ void extractTypeAST(astnode* root) {
 }
 
 
-// print the symbol table
-void printSymbolTable(idSymbolTable* table) {
-    
-    if (table == NULL) 
-        return;
-    
-    // make the format ready
-    if (table == globalIdTable)
-        printf("\tVariable Name\t");
-}
-
-
-
 // // traverse current and all children symbol tables
 // void traverseSymbolTable(idSymbolTable* curr) {
 //     if (curr == NULL)
@@ -441,7 +432,7 @@ void printFunctionTable(funcSymbolTable table) {
         }
     }
 }
- 
+
 
 // int main (int argc, char* argv[]) {
 //     parserfp = fopen("grammar.txt", "r");
