@@ -43,7 +43,6 @@ int findNextOffset(idSymbolTable* table) {
             itr = itr->next;
         }
     }
-
     idSymbolTable* tmp = table->child;
     while (tmp) {
         for (int i = 0; i < tmp->hashSize; i++) {
@@ -58,6 +57,25 @@ int findNextOffset(idSymbolTable* table) {
         }
         tmp = tmp->sibling;
     }
+    
+    tmp = table->parent;
+    while (tmp) {
+        for (int i = 0; i < tmp->hashSize; i++) {
+            itr = tmp->list[i].head;
+            while (itr) {
+                if (itr->entry.offset > max) {
+                    max = itr->entry.offset;
+                    entry = itr->entry;
+                }
+                itr = itr->next;
+            }
+        }
+        tmp = tmp->parent;
+    }
+
+    // empty table
+    if (strcmp(entry.name, "") == 0)
+        return 0;
 
     if (entry.AorP == 0) 
         max += entry.type.primitive.width;
@@ -109,16 +127,7 @@ char* generateLabel() {
 }
 
 
-/*
-    TODO
-        1. Change symbol tables so the temporaries can be handled (using scopeTable) - DONE?
-        2. Link temporaries to symbol table somehow - create relevant offsets (DONE?)
-        3. Floating point comparison and arithmetic?? - DONE
-        4. Module reuse statement - DONE
-        5. Code generation for dynamic type checking - DONE
-        6. Real numbers for dynamic/arrays - DONE
-        7. Dynamic bound check between arrays - DONE
-*/
+// generate assembly code by traversing the AST
 void generateASM(astnode* root) {
     
     if(root == NULL) 
@@ -154,7 +163,6 @@ void generateASM(astnode* root) {
         fprintf(asmFile, "trueMessage db \"True\", 10, 0\n");
         fprintf(asmFile, "falseMessage db \"False\", 10,  0\n");
 
-        
         // standard error message 
         fprintf(asmFile, "runTimeError db \"Run-time error: Bound values error\", 10, 0\n"); // newline, null terminator
         fprintf(asmFile, "\n\n");
@@ -553,8 +561,21 @@ void generateASM(astnode* root) {
             char* ub = entry->type.array.upperBound.lexeme;
             idSymbolTable* tmp = currentIdTable;
             int width = entry->type.array.datatype.width;
-            char* label = generateLabel();
-            char* exitLabel = generateLabel();
+
+            char* exitLabel1 = generateLabel();
+            char* exitLabel2 = generateLabel();
+
+            fprintf(asmFile, "\tMOV R13, 0\n");
+            fprintf(asmFile, "\tMOV RAX, RSP\n");
+            fprintf(asmFile, "\tMOV RDX, 0\n");
+            fprintf(asmFile, "\tMOV R9, 16\n");
+            fprintf(asmFile, "\tIDIV R9\n");
+            fprintf(asmFile, "\tCMP RDX, 0\n");
+            fprintf(asmFile, "\tJE %s\n", exitLabel1);
+            fprintf(asmFile, "\tMOV R13, 1\n");
+            fprintf(asmFile, "%s: \n", exitLabel1);
+
+            fprintf(asmFile, "\tMOV [RBP - 16 - %d], RSP\n", entry->offset);
 
             if (entry->type.array.lowerBound.tid == ID) {
                 symbolTableIdEntry* lbentry = NULL; 
@@ -598,14 +619,45 @@ void generateASM(astnode* root) {
             // dynamic bound check
             fprintf(asmFile, "\tCMP R8, R9\n");
             fprintf(asmFile, "\tJG _error\n");
+            fprintf(asmFile, "\tPUSH R8\n");
+            fprintf(asmFile, "\tPUSH R9\n");
+
+            fprintf(asmFile, "\tMOV RSI, R8\n");
+            fprintf(asmFile, "\tMOV RDX, R9\n");
+
+             if (entry->type.array.datatype.datatype.tid == INTEGER) 
+                fprintf(asmFile, "\tLEA RDI, [intArrMessage]\n");
+            
+            else if (entry->type.array.datatype.datatype.tid == BOOLEAN) 
+                fprintf(asmFile, "\tLEA RDI, [boolArrMessage]\n");
+
+            else 
+                fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
+
+            fprintf(asmFile, "\tMOV AL, 0\n");
+            fprintf(asmFile, "\tCALL printf\n");
+
+            fprintf(asmFile, "\tPOP R9\n");
+            fprintf(asmFile, "\tPOP R8\n");
+
+            char* label = generateLabel();
+            char* exitLabel = generateLabel();
+            char* oddEven1 = generateLabel();
+            char* oddEven2 = generateLabel();
 
             fprintf(asmFile, "\tMOV R10, 0\n"); // count
             fprintf(asmFile, "%s: \n", label);
-            fprintf(asmFile, "\tCMP R8, R9\n");
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
             fprintf(asmFile, "\tJG %s\n", exitLabel);
-            fprintf(asmFile, "\tMOV RAX, R10\n");
-            fprintf(asmFile, "\tNEG RAX\n");
-            fprintf(asmFile, "\tLEA RSI, [RBP + RAX * %d - 16 - %d]\n", width, entry->offset);
+
+            fprintf(asmFile, "\tMOV RSI, RSP\n");
+            fprintf(asmFile, "\tPUSH R8\n");
+            fprintf(asmFile, "\tPUSH R9\n");
+            fprintf(asmFile, "\tPUSH R10\n");
+            fprintf(asmFile, "\tCMP R13, 1\n");
+            fprintf(asmFile, "\tJE %s\n", oddEven1);
+            fprintf(asmFile, "\tPUSH R11\n");
+            fprintf(asmFile, "%s: \n", oddEven1);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
@@ -615,10 +667,30 @@ void generateASM(astnode* root) {
 
             fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
-            fprintf(asmFile, "\tINC R8\n");
-            fprintf(asmFile, "\tINC R10\n");
+
+            fprintf(asmFile, "\tCMP R13, 1\n");
+            fprintf(asmFile, "\tJE %s\n", oddEven2);
+            fprintf(asmFile, "\tPOP R11\n");
+            fprintf(asmFile, "%s: \n", oddEven2);
+            fprintf(asmFile, "\tXOR R13, 1\n");
+
+            fprintf(asmFile, "\tPOP R10\n");
+            fprintf(asmFile, "\tPOP R9\n");
+            fprintf(asmFile, "\tPOP R8\n");
+            fprintf(asmFile, "\tSUB RSP, %d\n", width);
+
+            fprintf(asmFile, "\tINC R8D\n");
+            fprintf(asmFile, "\tINC R10D\n");
             fprintf(asmFile, "\tJMP %s\n", label);
             fprintf(asmFile, "%s: \n", exitLabel);
+
+            fprintf(asmFile, "\tCMP R13, 1\n");
+            fprintf(asmFile, "\tJE %s\n", exitLabel2);
+            fprintf(asmFile, "\tPOP R11\n");
+            fprintf(asmFile, "%s: \n", exitLabel2);
+            fprintf(asmFile, "\tPOP R10\n");
+            fprintf(asmFile, "\tPOP R9\n");
+            fprintf(asmFile, "\tPOP R8\n");
         }
     }
 
@@ -1057,7 +1129,7 @@ void generateASM(astnode* root) {
             }
 
             if (idEntry->AorP == 0) 
-                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d]\n", idEntry->offset); 
+                fprintf(asmFile, "\tPUSH QWORD [RBP - 16 - %d]\n", idEntry->offset);
 
             else if (idEntry->type.array.dynamicArray == 0) {
                 int lb = atoi(idEntry->type.array.lowerBound.lexeme);
@@ -1465,10 +1537,10 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tJG _error\n");
 
             if (idx->data.T.tid == ID)
-                fprintf(asmFile, "\tMOV R10D, [RBP - 16 - %d]\n", idx->entry->offset);
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
             
             else 
-                fprintf(asmFile, "\tMOV R10D, %s\n", idx->data.T.lexeme);
+                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
 
             // check if index within bounds
             fprintf(asmFile, "\tCMP R8D, R10D\n");
@@ -1481,7 +1553,14 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tSUB R11, R8\n");
             fprintf(asmFile, "\tMOV RAX, R11\n");
             fprintf(asmFile, "\tNEG RAX\n");
-            fprintf(asmFile, "\tMOV R11, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R11, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R11, QWORD [R12 + RAX]\n");
+            }
         }
 
         else 
@@ -1492,7 +1571,7 @@ void generateASM(astnode* root) {
             astnode* idx = rightchild->children->sibling;
             
             if (idx->data.T.tid == ID)
-                fprintf(asmFile, "\tMOV R10D, [RBP - 16 - %d]\n", idx->entry->offset);
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
             
             else 
                 fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
@@ -1559,7 +1638,15 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tSUB R12, R8\n");
             fprintf(asmFile, "\tMOV RAX, R12\n");
             fprintf(asmFile, "\tNEG RAX\n");
-            fprintf(asmFile, "\tMOV R12, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+             if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R13, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R12, QWORD [R13 + RAX]\n");
+            }
+
         }
 
         else 

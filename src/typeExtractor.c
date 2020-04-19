@@ -28,6 +28,8 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
     entry.loopVariable = 0;
 
     if (type->TorNT == 0 && type->data.T.tid == ARRAY) {
+        astnode* lb = type->sibling->children;
+        astnode* ub = type->sibling->children->sibling;
         entry.AorP = 1;
         entry.type.array.arr = type->data.T;
         entry.type.array.dynamicArray = 0;
@@ -36,12 +38,12 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
 
         // dynamic array
         if (type->sibling->children->data.T.tid == ID || type->sibling->children->sibling->data.T.tid == ID) 
-            entry.type.array.dynamicArray = 8;
+            entry.type.array.dynamicArray = 1;
         
         entry.type.array.datatype.datatype = type->sibling->sibling->children->data.T;
         entry.type.array.datatype.width = 8;
 
-        // offset only assigned for static arrays
+        // offset for static arrays
         if (entry.type.array.dynamicArray == 0) {
             entry.offset = currentOffset;
 
@@ -50,6 +52,13 @@ symbolTableIdEntry createIdEntry(token id, astnode* type) {
             int ub = atoi(entry.type.array.upperBound.lexeme);
             currentOffset += (ub - lb + 1) * entry.type.array.datatype.width;
         }
+
+        // dynamic arrays
+        else {
+            entry.offset = currentOffset;
+            currentOffset += 8;
+        }
+
     }  
 
     else {
@@ -455,4 +464,4 @@ void printFunctionTable(funcSymbolTable table) {
 //     printAST(parseTreeRoot->syn);
 //     extractTypeAST(parseTreeRoot->syn);
 //     printFunctionTable(funcTable);
-// }
+// }f
