@@ -132,10 +132,15 @@ void generateASM(astnode* root) {
         // Data defintions
         fprintf(asmFile, "section .data\n\n");
         fprintf(asmFile, "integerRead db \"%%d\", 0\n");
-        fprintf(asmFile, "integerWrite db \"%%d\", 10, 0\n"); // newline, null terminator
+        fprintf(asmFile, "integerWrite db \"Output: %%d\", 10, 0\n"); // newline, null terminator
         fprintf(asmFile, "realRead db \"%%lf\", 0\n");
-        fprintf(asmFile, "realWrite db \"%%lf\", 10, 0\n"); // newline, null terminator
-        
+        fprintf(asmFile, "realWrite db \"Output: %%lf\", 10, 0\n"); // newline, null terminator
+
+        fprintf(asmFile, "integerarrayWrite db \"%%d \", 0\n"); 
+        fprintf(asmFile, "realarrayWrite db \"%%d \", 0\n");
+        fprintf(asmFile, "beginArrPrint db \"Output: \", 0\n");
+        fprintf(asmFile, "endArrPrint db 10, 0\n");
+
         // fancy printing formats
         fprintf(asmFile, "intMessage db \"Enter an integer\", 10, 0\n");
         fprintf(asmFile, "realMessage db \"Enter an real:\", 10, 0\n");
@@ -662,6 +667,10 @@ void generateASM(astnode* root) {
             char* label = generateLabel();
             char* exitLabel = generateLabel();
 
+            fprintf(asmFile, "\tLEA RDI, [beginArrPrint]\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
+            fprintf(asmFile, "\tCALL printf\n");
+
             fprintf(asmFile, "\tMOV R8, %d\n", lb);
             fprintf(asmFile, "\tMOV R9, 0\n");
             fprintf(asmFile, "%s: \n", label);
@@ -674,10 +683,10 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tMOV RSI, [RBP + RAX * %d - 16 - %d]\n", width, entry->offset);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
+                fprintf(asmFile, "\tLEA RDI, [integerarrayWrite]\n");
 
             else 
-                fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
+                fprintf(asmFile, "\tLEA RDI, [realarrayWrite]\n");
 
             fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -687,6 +696,10 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tINC R9\n");
             fprintf(asmFile, "\tJMP %s\n", label);
             fprintf(asmFile, "%s: \n", exitLabel);
+
+            fprintf(asmFile, "\tLEA RDI, [endArrPrint]\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
+            fprintf(asmFile, "\tCALL printf\n");
         }
 
          // dynamic arrays
@@ -697,6 +710,10 @@ void generateASM(astnode* root) {
             int width = entry->type.array.datatype.width;
             char* label = generateLabel();
             char* exitLabel = generateLabel();
+
+            fprintf(asmFile, "\tLEA RDI, [beginArrPrint]\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
+            fprintf(asmFile, "\tCALL printf\n");
 
             // if lower bound is dynamic
             if (entry->type.array.lowerBound.tid == ID) {
@@ -750,10 +767,10 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tMOV RSI, [RBP + RAX * %d - 16 - %d]\n", width, entry->offset);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
-                fprintf(asmFile, "\tLEA RDI, [integerWrite]\n");
+                fprintf(asmFile, "\tLEA RDI, [integerarrayWrite]\n");
 
             else if (entry->type.array.datatype.datatype.tid == REAL) 
-                fprintf(asmFile, "\tLEA RDI, [realWrite]\n");
+                fprintf(asmFile, "\tLEA RDI, [realarrayWrite]\n");
 
             fprintf(asmFile, "\tMOV AL,0\n");
             fprintf(asmFile, "\tCALL printf\n");
@@ -761,6 +778,10 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tINC R10\n");
             fprintf(asmFile, "\tJMP %s\n", label);
             fprintf(asmFile, "%s: \n", exitLabel);
+
+            fprintf(asmFile, "\tLEA RDI, [endArrPrint]\n");
+            fprintf(asmFile, "\tMOV AL, 0\n");
+            fprintf(asmFile, "\tCALL printf\n");
         }
     }
 

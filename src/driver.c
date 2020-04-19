@@ -164,7 +164,7 @@ int main (int argc, char* argv[]) {
 					parseInputSourceCode(argv[1]);
 					fclose(fp);
 
-					printf("Traversal order: \n");
+					printf("Preorder Traversal order: \n");
 					createAST(parseTreeRoot);
 					printAST(parseTreeRoot->syn);
 					lineno = 1;
