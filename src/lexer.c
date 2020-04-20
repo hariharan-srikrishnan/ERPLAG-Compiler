@@ -90,7 +90,7 @@ int keywordTokens[] = {
 };
 
 const int _NUM_KEYWORDS = sizeof(keywords) / sizeof(keywords[0]) ;
-const int _MAX_INPUT_FILE_SIZE = 10000;
+const int _MAX_INPUT_FILE_SIZE = 16384;
 
 char buffer1[BUFFER_SIZE];
 char buffer2[BUFFER_SIZE];

@@ -160,8 +160,8 @@ void generateASM(astnode* root) {
         fprintf(asmFile, "boolArrMessage db \"Enter boolean array for range %%d to %%d (1 or 0 only):\", 10, 0\n");
 
         // true false messages
-        fprintf(asmFile, "trueMessage db \"True\", 10, 0\n");
-        fprintf(asmFile, "falseMessage db \"False\", 10,  0\n");
+        fprintf(asmFile, "trueMessage db \"Output: True\", 10, 0\n");
+        fprintf(asmFile, "falseMessage db \"Output: False\", 10,  0\n");
 
         // standard error message 
         fprintf(asmFile, "runTimeError db \"Run-time error: Bound values error\", 10, 0\n"); // newline, null terminator
@@ -171,6 +171,7 @@ void generateASM(astnode* root) {
         fprintf(asmFile, "section .text\n");
         fprintf(asmFile, "extern printf\n");
         fprintf(asmFile, "extern scanf\n");
+        fprintf(asmFile, "extern malloc\n");
         fprintf(asmFile, "global main\n\n");
 
         // error handling - sys_exit system call
@@ -562,22 +563,7 @@ void generateASM(astnode* root) {
             idSymbolTable* tmp = currentIdTable;
             int width = entry->type.array.datatype.width;
 
-            char* exitLabel1 = generateLabel();
-            char* exitLabel2 = generateLabel();
-
-            fprintf(asmFile, "\tMOV R13, 0\n");
-            fprintf(asmFile, "\tMOV RAX, RSP\n");
-            fprintf(asmFile, "\tMOV RDX, 0\n");
-            fprintf(asmFile, "\tMOV R9, 16\n");
-            fprintf(asmFile, "\tIDIV R9\n");
-            fprintf(asmFile, "\tCMP RDX, 0\n");
-            fprintf(asmFile, "\tJE %s\n", exitLabel1);
-            fprintf(asmFile, "\tMOV R13, 1\n");
-            fprintf(asmFile, "%s: \n", exitLabel1);
-
-            fprintf(asmFile, "\tMOV [RBP - 16 - %d], RSP\n", entry->offset);
-
-            if (entry->type.array.lowerBound.tid == ID) {
+             if (entry->type.array.lowerBound.tid == ID) {
                 symbolTableIdEntry* lbentry = NULL; 
          
                 while (1) {
@@ -614,9 +600,8 @@ void generateASM(astnode* root) {
 
             else 
                 fprintf(asmFile, "\tMOV R9, %d\n", atoi(ub));
-
-
-            // dynamic bound check
+            
+            //  dynamic bound check
             fprintf(asmFile, "\tCMP R8, R9\n");
             fprintf(asmFile, "\tJG _error\n");
             fprintf(asmFile, "\tPUSH R8\n");
@@ -640,24 +625,74 @@ void generateASM(astnode* root) {
             fprintf(asmFile, "\tPOP R9\n");
             fprintf(asmFile, "\tPOP R8\n");
 
+            char* exitLabel1 = generateLabel();
+            char* exitLabel2 = generateLabel();
+
+            fprintf(asmFile, "\tPUSH R8\n");
+            fprintf(asmFile, "\tPUSH R9\n");
+
+            // allocate dynamic memory using malloc - align stack if needed
+            fprintf(asmFile, "\tMOV R13, 0\n");
+            fprintf(asmFile, "\tMOV RAX, RSP\n");
+            fprintf(asmFile, "\tMOV RDX, 0\n");
+            fprintf(asmFile, "\tMOV R10, 16\n");
+            fprintf(asmFile, "\tIDIV R10\n");
+            fprintf(asmFile, "\tCMP RDX, 0\n");
+            fprintf(asmFile, "\tJNE %s\n", exitLabel1);
+            fprintf(asmFile, "\tSUB RSP, 8\n");
+            fprintf(asmFile, "\tMOV R13, 1\n");
+            fprintf(asmFile, "%s: \n", exitLabel1);
+
+            fprintf(asmFile, "\tMOV RAX, R9\n");
+            fprintf(asmFile, "\tSUB RAX, R8\n");
+            fprintf(asmFile, "\tINC RAX\n");
+            fprintf(asmFile, "\tMOV RDX, %d\n", width);
+            fprintf(asmFile, "\tMUL RDX\n");
+            fprintf(asmFile, "\tPUSH RAX\n");
+            fprintf(asmFile, "\tCALL malloc\n");
+            fprintf(asmFile, "\tADD RSP, 8\n");
+            fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", entry->offset);
+
+            fprintf(asmFile, "\tCMP R13, 1\n");
+            fprintf(asmFile, "\tJNE %s\n", exitLabel2);
+            fprintf(asmFile, "\tADD RSP, 8\n");
+            fprintf(asmFile, "%s: \n", exitLabel2);
+
+            fprintf(asmFile, "\tPOP R9\n");
+            fprintf(asmFile, "\tPOP R8\n");
+
+            // begin scanning
+            char* exitLabel3 = generateLabel();
+            char* exitLabel4 = generateLabel();
             char* label = generateLabel();
             char* exitLabel = generateLabel();
-            char* oddEven1 = generateLabel();
-            char* oddEven2 = generateLabel();
 
             fprintf(asmFile, "\tMOV R10, 0\n"); // count
             fprintf(asmFile, "%s: \n", label);
             fprintf(asmFile, "\tCMP R8D, R9D\n");
             fprintf(asmFile, "\tJG %s\n", exitLabel);
 
-            fprintf(asmFile, "\tMOV RSI, RSP\n");
             fprintf(asmFile, "\tPUSH R8\n");
             fprintf(asmFile, "\tPUSH R9\n");
             fprintf(asmFile, "\tPUSH R10\n");
-            fprintf(asmFile, "\tCMP R13, 1\n");
-            fprintf(asmFile, "\tJE %s\n", oddEven1);
-            fprintf(asmFile, "\tPUSH R11\n");
-            fprintf(asmFile, "%s: \n", oddEven1);
+            // fprintf(asmFile, "\tPUSH R11\n");
+            fprintf(asmFile, "\tSUB RSP, 8\n");
+
+            // align stack
+            // fprintf(asmFile, "\tMOV R13, 0\n");
+            // fprintf(asmFile, "\tMOV RAX, RSP\n");
+            // fprintf(asmFile, "\tMOV RDX, 0\n");
+            // fprintf(asmFile, "\tMOV RBX, 16\n");
+            // fprintf(asmFile, "\tIDIV RBX\n");
+            // fprintf(asmFile, "\tCMP RDX, 0\n");
+            // fprintf(asmFile, "\tJE %s\n", exitLabel3);
+            // fprintf(asmFile, "\tSUB RSP, 8\n");
+            // fprintf(asmFile, "\tMOV R13, 1\n");
+            // fprintf(asmFile, "%s: \n", exitLabel3);
+
+            // access address
+            fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", entry->offset);
+            fprintf(asmFile, "\tLEA RSI, [RAX + R10 * %d]\n", width);
 
             if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
                 fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
@@ -667,31 +702,159 @@ void generateASM(astnode* root) {
 
             fprintf(asmFile, "\tMOV AL, 0\n");
             fprintf(asmFile, "\tCALL scanf\n");
+            // fprintf(asmFile, "\tCMP R13, 1\n");
+            // fprintf(asmFile, "\tJE %s\n", exitLabel4);
+            fprintf(asmFile, "\tADD RSP, 8\n");
+            // fprintf(asmFile, "%s: \n", exitLabel4);
 
-            fprintf(asmFile, "\tCMP R13, 1\n");
-            fprintf(asmFile, "\tJE %s\n", oddEven2);
-            fprintf(asmFile, "\tPOP R11\n");
-            fprintf(asmFile, "%s: \n", oddEven2);
-            fprintf(asmFile, "\tXOR R13, 1\n");
-
+            // fprintf(asmFile, "\tPOP R11\n");
             fprintf(asmFile, "\tPOP R10\n");
             fprintf(asmFile, "\tPOP R9\n");
             fprintf(asmFile, "\tPOP R8\n");
-            fprintf(asmFile, "\tSUB RSP, %d\n", width);
 
             fprintf(asmFile, "\tINC R8D\n");
             fprintf(asmFile, "\tINC R10D\n");
             fprintf(asmFile, "\tJMP %s\n", label);
             fprintf(asmFile, "%s: \n", exitLabel);
-
-            fprintf(asmFile, "\tCMP R13, 1\n");
-            fprintf(asmFile, "\tJE %s\n", exitLabel2);
-            fprintf(asmFile, "\tPOP R11\n");
-            fprintf(asmFile, "%s: \n", exitLabel2);
-            fprintf(asmFile, "\tPOP R10\n");
-            fprintf(asmFile, "\tPOP R9\n");
-            fprintf(asmFile, "\tPOP R8\n");
         }
+
+        // dynamic arrays
+        // else {
+        //     char* lb = entry->type.array.lowerBound.lexeme;
+        //     char* ub = entry->type.array.upperBound.lexeme;
+        //     idSymbolTable* tmp = currentIdTable;
+        //     int width = entry->type.array.datatype.width;
+
+        //     char* exitLabel1 = generateLabel();
+        //     char* exitLabel2 = generateLabel();
+
+            // fprintf(asmFile, "\tMOV R13, 0\n");
+            // fprintf(asmFile, "\tMOV RAX, RSP\n");
+            // fprintf(asmFile, "\tMOV RDX, 0\n");
+            // fprintf(asmFile, "\tMOV R9, 16\n");
+            // fprintf(asmFile, "\tIDIV R9\n");
+            // fprintf(asmFile, "\tCMP RDX, 0\n");
+            // fprintf(asmFile, "\tJE %s\n", exitLabel1);
+            // fprintf(asmFile, "\tMOV R13, 1\n");
+            // fprintf(asmFile, "%s: \n", exitLabel1);
+
+        //     fprintf(asmFile, "\tMOV [RBP - 16 - %d], RSP\n", entry->offset);
+
+        //     if (entry->type.array.lowerBound.tid == ID) {
+        //         symbolTableIdEntry* lbentry = NULL; 
+         
+        //         while (1) {
+        //             lbentry = searchId(*tmp, lb);
+                    
+        //             // found in the symbol table
+        //             if (lbentry != NULL)
+        //                 break;
+                    
+        //             tmp = tmp->parent;
+        //         }
+        //         fprintf(asmFile, "\tMOV R8, QWORD [RBP - 16 - %d]\n", lbentry->offset);
+        //     }
+
+        //     else 
+        //         fprintf(asmFile, "\tMOV R8, %d\n", atoi(lb));
+
+
+        //      if (entry->type.array.upperBound.tid == ID) {
+        //         symbolTableIdEntry* ubentry = NULL; 
+        //         tmp = currentIdTable;
+
+        //         while (1) {
+        //             ubentry = searchId(*tmp, ub);
+                    
+        //             // found in the symbol table
+        //             if (ubentry != NULL)
+        //                 break;
+                    
+        //             tmp = tmp->parent;
+        //         }
+        //         fprintf(asmFile, "\tMOV R9, QWORD [RBP - 16 - %d]\n", ubentry->offset);
+        //     }
+
+        //     else 
+        //         fprintf(asmFile, "\tMOV R9, %d\n", atoi(ub));
+
+
+        //     // dynamic bound check
+        //     fprintf(asmFile, "\tCMP R8, R9\n");
+        //     fprintf(asmFile, "\tJG _error\n");
+        //     fprintf(asmFile, "\tPUSH R8\n");
+        //     fprintf(asmFile, "\tPUSH R9\n");
+
+        //     fprintf(asmFile, "\tMOV RSI, R8\n");
+        //     fprintf(asmFile, "\tMOV RDX, R9\n");
+
+        //      if (entry->type.array.datatype.datatype.tid == INTEGER) 
+        //         fprintf(asmFile, "\tLEA RDI, [intArrMessage]\n");
+            
+        //     else if (entry->type.array.datatype.datatype.tid == BOOLEAN) 
+        //         fprintf(asmFile, "\tLEA RDI, [boolArrMessage]\n");
+
+        //     else 
+        //         fprintf(asmFile, "\tLEA RDI, [realMessage]\n");
+
+        //     fprintf(asmFile, "\tMOV AL, 0\n");
+        //     fprintf(asmFile, "\tCALL printf\n");
+
+        //     fprintf(asmFile, "\tPOP R9\n");
+        //     fprintf(asmFile, "\tPOP R8\n");
+
+        //     char* label = generateLabel();
+        //     char* exitLabel = generateLabel();
+        //     char* oddEven1 = generateLabel();
+        //     char* oddEven2 = generateLabel();
+
+        //     fprintf(asmFile, "\tMOV R10, 0\n"); // count
+        //     fprintf(asmFile, "%s: \n", label);
+        //     fprintf(asmFile, "\tCMP R8D, R9D\n");
+        //     fprintf(asmFile, "\tJG %s\n", exitLabel);
+
+        //     fprintf(asmFile, "\tMOV RSI, RSP\n");
+        //     fprintf(asmFile, "\tPUSH R8\n");
+        //     fprintf(asmFile, "\tPUSH R9\n");
+        //     fprintf(asmFile, "\tPUSH R10\n");
+        //     fprintf(asmFile, "\tCMP R13, 1\n");
+        //     fprintf(asmFile, "\tJE %s\n", oddEven1);
+        //     fprintf(asmFile, "\tPUSH R11\n");
+        //     fprintf(asmFile, "%s: \n", oddEven1);
+
+        //     if (entry->type.array.datatype.datatype.tid == INTEGER || entry->type.array.datatype.datatype.tid == BOOLEAN) 
+        //         fprintf(asmFile, "\tLEA RDI, [integerRead]\n");
+
+        //     else if (entry->type.array.datatype.datatype.tid == REAL) 
+        //         fprintf(asmFile, "\tLEA RDI, [realRead]\n");
+
+        //     fprintf(asmFile, "\tMOV AL, 0\n");
+        //     fprintf(asmFile, "\tCALL scanf\n");
+
+        //     fprintf(asmFile, "\tCMP R13, 1\n");
+        //     fprintf(asmFile, "\tJE %s\n", oddEven2);
+        //     fprintf(asmFile, "\tPOP R11\n");
+        //     fprintf(asmFile, "%s: \n", oddEven2);
+        //     fprintf(asmFile, "\tXOR R13, 1\n");
+
+        //     fprintf(asmFile, "\tPOP R10\n");
+        //     fprintf(asmFile, "\tPOP R9\n");
+        //     fprintf(asmFile, "\tPOP R8\n");
+        //     fprintf(asmFile, "\tSUB RSP, %d\n", width);
+
+        //     fprintf(asmFile, "\tINC R8D\n");
+        //     fprintf(asmFile, "\tINC R10D\n");
+        //     fprintf(asmFile, "\tJMP %s\n", label);
+        //     fprintf(asmFile, "%s: \n", exitLabel);
+
+        //     fprintf(asmFile, "\tCMP R13, 1\n");
+        //     fprintf(asmFile, "\tJE %s\n", exitLabel2);
+        //     fprintf(asmFile, "\tPOP R11\n");
+        //     fprintf(asmFile, "%s: \n", exitLabel2);
+        //     fprintf(asmFile, "\tPOP R10\n");
+        //     fprintf(asmFile, "\tPOP R9\n");
+        //     fprintf(asmFile, "\tPOP R8\n");
+        // }
     }
 
     else if (root->TorNT == 1 && root->data.NT.ntid == ioStmt && root->children->TorNT == 0 && root->children->data.T.tid == PRINT) {
@@ -1734,15 +1897,186 @@ void generateASM(astnode* root) {
 
         char* tmp = generateTemporary(root);
 
+        if (leftchild->TorNT == 1 && leftchild->data.NT.ntid == var_id_num) {
+            symbolTableIdEntry* idEntry = leftchild->entry;
+            astnode* idx = leftchild->children->sibling;
+
+            int width = idEntry->type.array.datatype.width;
+            char* label = generateLabel();
+            char* exitLabel = generateLabel();
+
+            if (idEntry->type.array.lowerBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.lowerBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R8, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R8, %d\n", atoi(idEntry->type.array.lowerBound.lexeme));
+
+
+            // dynamic upper bound
+            if (idEntry->type.array.upperBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.upperBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R9, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R9, %d\n", atoi(idEntry->type.array.upperBound.lexeme));
+
+
+            // check if bounds are valid
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
+            fprintf(asmFile, "\tJG _error\n");
+
+            if (idx->data.T.tid == ID)
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+            
+            else 
+                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
+
+            // check if index within bounds
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
+            fprintf(asmFile, "\tJG _error\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
+            fprintf(asmFile, "\tJL _error\n");
+            
+            // store left offset in register
+            fprintf(asmFile, "\tMOVSX R11, R10D\n");
+            fprintf(asmFile, "\tSUB R11, R8\n");
+            fprintf(asmFile, "\tMOV RAX, R11\n");
+            fprintf(asmFile, "\tNEG RAX\n");
+
+            if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R11, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R11, QWORD [R12 + RAX]\n");
+            }
+        }
+
+        else 
+            fprintf(asmFile, "\tMOV R11, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset);
+
+        if (rightchild->TorNT == 1 && rightchild->data.NT.ntid == var_id_num) {
+            symbolTableIdEntry* idEntry = rightchild->entry;
+            astnode* idx = rightchild->children->sibling;
+            
+            if (idx->data.T.tid == ID)
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+            
+            else 
+                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
+
+            int width = idEntry->type.array.datatype.width;
+            char* label = generateLabel();
+            char* exitLabel = generateLabel();
+
+            if (idEntry->type.array.lowerBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.lowerBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R8, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R8, %d\n", atoi(idEntry->type.array.lowerBound.lexeme));
+
+
+            // dynamic upper bound
+            if (idEntry->type.array.upperBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.upperBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R9, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R9, %d\n", atoi(idEntry->type.array.upperBound.lexeme));
+
+
+            // check if bounds are valid
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
+            fprintf(asmFile, "\tJG _error\n");
+
+            // check if index within bounds
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
+            fprintf(asmFile, "\tJG _error\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
+            fprintf(asmFile, "\tJL _error\n");
+            
+            // store left offset in register
+            fprintf(asmFile, "\tMOVSX R12, R10D\n");
+            fprintf(asmFile, "\tSUB R12, R8\n");
+            fprintf(asmFile, "\tMOV RAX, R12\n");
+            fprintf(asmFile, "\tNEG RAX\n");
+
+             if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R13, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R12, QWORD [R13 + RAX]\n");
+            }
+        }
+
+        else 
+            fprintf(asmFile, "\tMOV R12, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset);
+        
+
         if (root->data.T.tid == AND) {
-            fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset);
-            fprintf(asmFile, "\tAND RAX, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset);
+            fprintf(asmFile, "\tMOV RAX, R11\n");
+            fprintf(asmFile, "\tAND RAX, R12\n");
             fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", root->entry->offset);
         }
 
         else {
-            fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset);
-            fprintf(asmFile, "\tOR  RAX, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset);
+            fprintf(asmFile, "\tMOV RAX, R11\n");
+            fprintf(asmFile, "\tOR  RAX, R12\n");
             fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", root->entry->offset);
         }
     }
@@ -1755,18 +2089,190 @@ void generateASM(astnode* root) {
         generateASM(rightchild);
 
         char* tmp = generateTemporary(root);
+
+        if (leftchild->TorNT == 1 && leftchild->data.NT.ntid == var_id_num) {
+            symbolTableIdEntry* idEntry = leftchild->entry;
+            astnode* idx = leftchild->children->sibling;
+
+            int width = idEntry->type.array.datatype.width;
+            char* label = generateLabel();
+            char* exitLabel = generateLabel();
+
+            if (idEntry->type.array.lowerBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.lowerBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R8, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R8, %d\n", atoi(idEntry->type.array.lowerBound.lexeme));
+
+
+            // dynamic upper bound
+            if (idEntry->type.array.upperBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.upperBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R9, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R9, %d\n", atoi(idEntry->type.array.upperBound.lexeme));
+
+
+            // check if bounds are valid
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
+            fprintf(asmFile, "\tJG _error\n");
+
+            if (idx->data.T.tid == ID)
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+            
+            else 
+                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
+
+            // check if index within bounds
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
+            fprintf(asmFile, "\tJG _error\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
+            fprintf(asmFile, "\tJL _error\n");
+            
+            // store left offset in register
+            fprintf(asmFile, "\tMOVSX R11, R10D\n");
+            fprintf(asmFile, "\tSUB R11, R8\n");
+            fprintf(asmFile, "\tMOV RAX, R11\n");
+            fprintf(asmFile, "\tNEG RAX\n");
+
+            if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R11, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R11, QWORD [R12 + RAX]\n");
+            }
+        }
+
+        else 
+            fprintf(asmFile, "\tMOV R11, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset);
+
+        if (rightchild->TorNT == 1 && rightchild->data.NT.ntid == var_id_num) {
+            symbolTableIdEntry* idEntry = rightchild->entry;
+            astnode* idx = rightchild->children->sibling;
+            
+            if (idx->data.T.tid == ID)
+                fprintf(asmFile, "\tMOV R10, QWORD [RBP - 16 - %d]\n", idx->entry->offset);
+            
+            else 
+                fprintf(asmFile, "\tMOV R10, %s\n", idx->data.T.lexeme);
+
+            int width = idEntry->type.array.datatype.width;
+            char* label = generateLabel();
+            char* exitLabel = generateLabel();
+
+            if (idEntry->type.array.lowerBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.lowerBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R8, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R8, %d\n", atoi(idEntry->type.array.lowerBound.lexeme));
+
+
+            // dynamic upper bound
+            if (idEntry->type.array.upperBound.tid == ID) {
+                symbolTableIdEntry* entry = NULL; 
+                idSymbolTable* tmp = currentIdTable;
+
+                while (1) {
+                    entry = searchId(*tmp, idEntry->type.array.upperBound.lexeme);
+                    
+                    // found in the symbol table
+                    if (entry != NULL)
+                        break;
+                    
+                    tmp = tmp->parent;
+                }
+
+                fprintf(asmFile, "\tMOV R9, QWORD [RBP - 16 - %d]\n", entry->offset);
+            }
+
+            else 
+                fprintf(asmFile, "\tMOV R9, %d\n", atoi(idEntry->type.array.upperBound.lexeme));
+
+
+            // check if bounds are valid
+            fprintf(asmFile, "\tCMP R8D, R9D\n");
+            fprintf(asmFile, "\tJG _error\n");
+
+            // check if index within bounds
+            fprintf(asmFile, "\tCMP R8D, R10D\n");
+            fprintf(asmFile, "\tJG _error\n");
+            fprintf(asmFile, "\tCMP R9D, R10D\n");
+            fprintf(asmFile, "\tJL _error\n");
+            
+            // store left offset in register
+            fprintf(asmFile, "\tMOVSX R12, R10D\n");
+            fprintf(asmFile, "\tSUB R12, R8\n");
+            fprintf(asmFile, "\tMOV RAX, R12\n");
+            fprintf(asmFile, "\tNEG RAX\n");
+
+             if (idEntry->type.array.dynamicArray == 0) 
+                fprintf(asmFile, "\tMOV R12, QWORD [RBP + RAX * %d - 16 - %d]\n", width, idEntry->offset);
+
+            else {
+                fprintf(asmFile, "\tMOV R13, QWORD [RBP - 16 - %d]\n", idEntry->offset);
+                fprintf(asmFile, "\tMOV R12, QWORD [R13 + RAX]\n");
+            }
+        }
+
+        else 
+            fprintf(asmFile, "\tMOV R12, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset);
+
         char* label1 = generateLabel();
         char* label2 = generateLabel();
         char* exitLabel = generateLabel();
 
         if (leftchild->datatype.tid == INTEGER) {
-            fprintf(asmFile, "\tMOV RAX, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset); // load 
-            fprintf(asmFile, "\tCMP RAX, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset); // compare 
+            fprintf(asmFile, "\tMOV RAX, R11\n"); 
+            fprintf(asmFile, "\tCMP RAX, R12\n"); 
         }
 
+        // this won't work exactly
         else {
-            fprintf(asmFile, "\tMOV   XMM0, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset); // load 
-            fprintf(asmFile, "\tCMPSD XMM0, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset); // compare 
+            fprintf(asmFile, "\tMOV   XMM0, QWORD [RBP - 16 - %d]\n", leftchild->entry->offset); 
+            fprintf(asmFile, "\tCMPSD XMM0, QWORD [RBP - 16 - %d]\n", rightchild->entry->offset); 
         }
 
         if (root->data.T.tid == GT) {
