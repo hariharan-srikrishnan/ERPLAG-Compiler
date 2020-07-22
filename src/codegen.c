@@ -1614,7 +1614,7 @@ void generateASM(astnode* root) {
             // need to negate the result
             if (tmp->children->data.T.tid == MINUS) {
                 
-                if (tmp->entry->type.array.datatype.datatype.tid == INTEGER) {
+                if ((root->entry->AorP == 0 && root->entry->type.primitive.datatype.tid == INTEGER) || (root->entry->AorP == 1 && root->entry->type.array.datatype.datatype.tid == INTEGER)) {
                     fprintf(asmFile, "\tMOV RAX, 0\n");
                     fprintf(asmFile, "\tSUB RAX, QWORD [RBP - 16 - %d]\n", tmp->sibling->entry->offset);
                     fprintf(asmFile, "\tMOV QWORD [RBP - 16 - %d], RAX\n", tmp->sibling->entry->offset);

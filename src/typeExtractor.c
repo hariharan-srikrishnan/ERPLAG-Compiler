@@ -362,7 +362,7 @@ void extractTypeAST(astnode* root) {
         root->scopeTable = currentIdTable;
 
         extractTypeAST(root->children->sibling);
-        extractTypeAST(root->children->sibling->sibling);
+        extractTypeAST(root->children->sibling->sibling->children);
         currentIdTable = currentIdTable->parent;
     }
 
